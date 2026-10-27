@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export type WorkoutPhase = 'waiting' | 'executing' | 'resting';
+export type WorkoutPhase = 'waiting' | 'executing' | 'resting' | 'next-exercise';
 
 interface UseWorkoutTimersOptions {
   workoutStartTime: number;
@@ -72,7 +72,13 @@ export function useWorkoutTimers({
     setPhase('executing');
   }
 
-  function completeSet(durationSeconds = restDurationSeconds) {
+  function completeSet(durationSeconds = restDurationSeconds, hasNextSet = true) {
+    if (!hasNextSet) {
+      setRestSeconds(0);
+      setRestStartedAt(null);
+      setPhase('next-exercise');
+      return;
+    }
     const duration = Math.max(1, durationSeconds);
     setActiveRestDuration(duration);
     setRestSeconds(duration);
