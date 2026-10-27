@@ -18,6 +18,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { EXERCISE_LIBRARY } from '../data/mockData.ts';
+import { MuscleIllustration } from './MuscleIllustration.tsx';
 
 interface WorkoutRoutinesProps {
   onStartRoutine: (routineId: string) => void;
@@ -37,6 +38,7 @@ export const WorkoutRoutines: React.FC<WorkoutRoutinesProps> = ({ onStartRoutine
   } = useWorkout();
 
   const [selectedRoutineId, setSelectedRoutineId] = useState<string>(routines[0]?.id || 'routine-a');
+  const [expandedRoutineId, setExpandedRoutineId] = useState<string | null>(routines[0]?.id || 'routine-a');
 
   // Modals state
   const [isAddExerciseOpen, setIsAddExerciseOpen] = useState(false);
@@ -238,53 +240,77 @@ export const WorkoutRoutines: React.FC<WorkoutRoutinesProps> = ({ onStartRoutine
         </button>
       </div>
 
-      {/* Routine Tabs / Cards Scroller */}
-      <div className="flex gap-2.5 overflow-x-auto no-scrollbar py-1">
+      <section aria-label="Fichas de treino" className="grid grid-cols-1 gap-4">
         {routines.map(routine => {
           const isSelected = routine.id === selectedRoutine.id;
+          const isExpanded = expandedRoutineId === routine.id;
           const isActive = activeWorkout?.routineId === routine.id;
+          const mainExercise = routine.exercises[0];
 
           return (
-            <button
+            <article
               key={routine.id}
-              type="button"
-              onClick={() => setSelectedRoutineId(routine.id)}
-              className={`p-3.5 rounded-2xl text-left border transition-all shrink-0 min-w-[145px] flex flex-col justify-between ${
-                isSelected
-                  ? 'bg-[#171f33] border-[#f97316] shadow-md shadow-[#f97316]/10'
-                  : 'bg-[#131b2e] border-white/5 hover:border-white/10'
-              }`}
+              className="overflow-hidden rounded-3xl border-2 bg-[#111827] shadow-lg"
+              style={{ borderColor: routine.color || '#22c55e' }}
             >
-              <div className="flex items-center justify-between w-full">
+              <div className="grid grid-cols-[auto_1fr] items-center gap-4 p-5">
                 <span
-                  className="w-7 h-7 rounded-lg text-xs font-bold font-display flex items-center justify-center"
-                  style={{
-                    backgroundColor: `${routine.color || '#f97316'}25`,
-                    color: routine.color || '#f97316',
-                  }}
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl text-2xl font-bold text-white"
+                  style={{ backgroundColor: routine.color || '#22c55e' }}
                 >
                   {routine.code}
                 </span>
-                {isActive && (
-                  <span className="w-2 h-2 rounded-full bg-[#f97316] animate-pulse" />
+                <div className="min-w-0">
+                  <h3 className="text-xl font-bold text-white">{routine.shortName || 'Treino ' + routine.code}</h3>
+                  <p className="mt-1 text-base font-semibold text-[#dae2fd]">{routine.focusMuscles}</p>
+                  <p className="mt-1 text-base text-[#dae2fd]">
+                    {routine.exercises.length} exercícios • cerca de {routine.estimatedMinutes} min
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex min-h-40 items-center justify-center bg-[#0b1326] px-4 py-2">
+                {mainExercise ? (
+                  <MuscleIllustration
+                    exerciseName={mainExercise.name}
+                    muscleGroup={mainExercise.muscleGroup}
+                    muscleSecondary={mainExercise.muscleSecondary}
+                  />
+                ) : (
+                  <Dumbbell aria-hidden="true" className="h-12 w-12 text-[#374151]" />
                 )}
               </div>
 
-              <div className="mt-2">
-                <span className="text-xs font-bold font-display text-white block truncate">
-                  {routine.title}
-                </span>
-                <span className="text-[11px] text-[#94a3b8] mt-0.5 block">
-                  {routine.exercises.length} exercícios
-                </span>
+              <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => onStartRoutine(routine.id)}
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl px-4 text-lg font-bold text-white shadow-md"
+                  style={{ backgroundColor: routine.color || '#22c55e' }}
+                >
+                  <Play aria-hidden="true" className="h-6 w-6 fill-current" />
+                  {isActive ? 'Continuar Treino ' + routine.code : 'Iniciar Treino ' + routine.code}
+                </button>
+                <button
+                  type="button"
+                  aria-expanded={isExpanded}
+                  onClick={() => {
+                    setSelectedRoutineId(routine.id);
+                    setExpandedRoutineId(isExpanded ? null : routine.id);
+                  }}
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-[#171f33] px-4 text-base font-bold text-white"
+                >
+                  <ChevronRight aria-hidden="true" className={'h-5 w-5 transition-transform ' + (isExpanded ? 'rotate-90' : '')} />
+                  {isExpanded ? 'Ocultar exercícios' : 'Ver exercícios'}
+                </button>
               </div>
-            </button>
+            </article>
           );
         })}
-      </div>
+      </section>
 
       {/* Selected Routine Detail Card */}
-      {selectedRoutine && (
+      {selectedRoutine && expandedRoutineId === selectedRoutine.id && (
         <div className="bg-[#131b2e] rounded-3xl p-5 border border-white/5 space-y-4 shadow-sm">
           {/* Card Top Information */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4">
@@ -386,7 +412,7 @@ export const WorkoutRoutines: React.FC<WorkoutRoutinesProps> = ({ onStartRoutine
                       <span>·</span>
                       <span>{ex.defaultRestSec}s desc.</span>
                     </div>
-                    {ex.notes && (
+                    {(ex.tips || ex.notes) && (
                       <p className="text-[11px] text-[#94a3b8] italic mt-0.5 truncate max-w-sm">
                         "{ex.notes}"
                       </p>
