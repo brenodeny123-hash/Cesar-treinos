@@ -70,7 +70,7 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
       ' • ' + currentExercise.targetReps;
   }, [currentExercise, nextIncompleteSet]);
 
-  if (!isOpen || !activeWorkout) return null;
+  if (!isOpen || (!activeWorkout && !completedSummary)) return null;
 
   const handleCompleteSet = () => {
     if (!currentExercise || !nextIncompleteSet) return;
