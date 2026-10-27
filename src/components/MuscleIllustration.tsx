@@ -8,6 +8,7 @@ import {
 interface MuscleIllustrationProps {
   exerciseName: string;
   muscleGroup?: string;
+  muscleSecondary?: string;
   className?: string;
   compact?: boolean;
 }
@@ -15,10 +16,15 @@ interface MuscleIllustrationProps {
 export const MuscleIllustration: React.FC<MuscleIllustrationProps> = ({
   exerciseName,
   muscleGroup,
+  muscleSecondary,
   className = '',
   compact = false,
 }) => {
-  const highlight = getMuscleHighlight(exerciseName, muscleGroup);
+  const baseHighlight = getMuscleHighlight(exerciseName, muscleGroup);
+  const secondaryRegions = muscleSecondary
+    ? getMuscleHighlight('', muscleSecondary).primary
+    : baseHighlight.secondary;
+  const highlight = { ...baseHighlight, secondary: secondaryRegions };
   const fill = (region: MuscleRegion) => getMuscleRegionFill(region, highlight);
   const viewLabel = highlight.view === 'front' ? 'frente' : 'costas';
   const width = compact ? 60 : 200;
