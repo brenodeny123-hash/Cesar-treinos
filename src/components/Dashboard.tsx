@@ -26,7 +26,7 @@ export const Dashboard: React.FC<DashboardProps> = props => {
     : todayRoutine;
   const displayName = user?.displayName?.split(' ')[0] || studentProfile.nickname || 'aluno';
 
-  const startLabel = activeWorkout ? 'Continuar meu treino' : 'Iniciar treino de hoje';
+  const startLabel = activeWorkout ? 'Continuar meu treino' : 'Iniciar Treino de Hoje';
   const handleStart = () => {
     if (routineToStart) props.onStartWorkout(routineToStart.id);
   };
