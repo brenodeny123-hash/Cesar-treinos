@@ -111,7 +111,18 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [routines, setRoutines] = useState<WorkoutRoutine[]>(() => {
     try {
       const saved = localStorage.getItem('pulsefit_routines');
-      return saved ? JSON.parse(saved) : INITIAL_ROUTINES;
+      if (!saved) return INITIAL_ROUTINES;
+
+      const currentRoutines = JSON.parse(saved) as WorkoutRoutine[];
+      const currentVersion = localStorage.getItem('pulsefit_routines_version');
+      if (currentVersion === '2') return currentRoutines;
+
+      const standardIds = new Set(['routine-a', 'routine-b', 'routine-c', 'routine-d']);
+      const customRoutines = currentRoutines.filter(routine => !standardIds.has(routine.id));
+      const migratedRoutines = [...INITIAL_ROUTINES, ...customRoutines];
+      localStorage.setItem('pulsefit_routines_version', '2');
+      localStorage.setItem('pulsefit_routines', JSON.stringify(migratedRoutines));
+      return migratedRoutines;
     } catch {
       return INITIAL_ROUTINES;
     }
@@ -188,6 +199,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     try {
       localStorage.setItem('pulsefit_routines', JSON.stringify(routines));
+      localStorage.setItem('pulsefit_routines_version', '2');
     } catch (e) {
       console.warn('LocalStorage error routines', e);
     }
