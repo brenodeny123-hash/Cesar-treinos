@@ -72,17 +72,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     try {
       const unsubscribe = onAuthStateChanged(auth, (fbUser: User | null) => {
-        if (fbUser) {
-          const mappedUser: AppUser = {
-            uid: fbUser.uid,
-            email: fbUser.email || 'usuario@pulsefit.com',
-            displayName: fbUser.displayName || fbUser.email?.split('@')[0] || 'Aluno PulseFit',
-            photoURL: fbUser.photoURL || undefined,
-            role: fbUser.email?.includes('cesar') ? 'coach' : 'student',
-          };
-          setUser(mappedUser);
-          setIsAuthModalOpen(false);
+        if (!fbUser) {
+          setUser(null);
+          setIsAuthModalOpen(true);
+          return;
         }
+
+        const mappedUser: AppUser = {
+          uid: fbUser.uid,
+          email: fbUser.email || 'usuario@pulsefit.com',
+          displayName: fbUser.displayName || fbUser.email?.split('@')[0] || 'Aluno PulseFit',
+          photoURL: fbUser.photoURL || undefined,
+          role: fbUser.email?.includes('cesar') ? 'coach' : 'student',
+        };
+        setUser(mappedUser);
+        setIsAuthModalOpen(false);
       });
       return () => unsubscribe();
     } catch (e) {
@@ -116,16 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (errorMsg.includes('invalid-email')) {
         return { success: false, error: 'E-mail em formato inválido.' };
       }
-      // If Firebase email/pass is not enabled in Firebase console, simulate account
-      const fallbackUser: AppUser = {
-        uid: `user-${Date.now()}`,
-        email,
-        displayName: email.split('@')[0],
-        role: email.includes('cesar') ? 'coach' : 'student',
-      };
-      setUser(fallbackUser);
-      setIsAuthModalOpen(false);
-      return { success: true };
+      return { success: false, error: 'Não foi possível entrar. Verifique seus dados e tente novamente.' };
     }
   };
 
@@ -153,15 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (errorMsg.includes('weak-password')) {
         return { success: false, error: 'A senha deve ter no mínimo 6 caracteres.' };
       }
-      const fallbackUser: AppUser = {
-        uid: `user-${Date.now()}`,
-        email,
-        displayName: name || email.split('@')[0],
-        role: 'student',
-      };
-      setUser(fallbackUser);
-      setIsAuthModalOpen(false);
-      return { success: true };
+      return { success: false, error: 'Não foi possível criar a conta. Verifique os dados e tente novamente.' };
     }
   };
 
@@ -202,7 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await sendPasswordResetEmail(auth, email);
       return { success: true };
     } catch {
-      return { success: true };
+      return { success: false, error: 'Não foi possível enviar o e-mail de recuperação. Tente novamente.' };
     }
   };
 
