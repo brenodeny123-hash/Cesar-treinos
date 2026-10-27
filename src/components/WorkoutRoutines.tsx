@@ -149,6 +149,7 @@ export const WorkoutRoutines: React.FC<WorkoutRoutinesProps> = ({ onStartRoutine
       const remaining = routines.filter(r => r.id !== routineId);
       if (remaining[0]) {
         setSelectedRoutineId(remaining[0].id);
+        setExpandedRoutineId(remaining[0].id);
       }
     }
   };
@@ -242,7 +243,6 @@ export const WorkoutRoutines: React.FC<WorkoutRoutinesProps> = ({ onStartRoutine
 
       <section aria-label="Fichas de treino" className="grid grid-cols-1 gap-4">
         {routines.map(routine => {
-          const isSelected = routine.id === selectedRoutine.id;
           const isExpanded = expandedRoutineId === routine.id;
           const isActive = activeWorkout?.routineId === routine.id;
           const mainExercise = routine.exercises[0];
