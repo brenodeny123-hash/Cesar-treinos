@@ -50,7 +50,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         aria-describedby="onboarding-description"
         className="w-full max-w-lg rounded-3xl border border-white/10 bg-[#131b2e] p-6 sm:p-8 shadow-2xl"
       >
-        <p className="text-base font-semibold text-[#f97316]">
+        <p className="text-base font-semibold text-[#22c55e]">
           Bem-vindo ao César Treinos
         </p>
 
@@ -70,14 +70,14 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
               <span
                 key={item.title}
                 aria-hidden="true"
-                className={`h-2.5 w-8 rounded-full ${index <= stepIndex ? 'bg-[#f97316]' : 'bg-[#2d3449]'}`}
+                className={`h-2.5 w-8 rounded-full ${index <= stepIndex ? 'bg-[#22c55e]' : 'bg-[#2d3449]'}`}
               />
             ))}
           </div>
         </div>
 
         <div className="mt-10 flex min-h-64 flex-col items-center justify-center text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-[#f97316]/15 text-[#f97316]">
+          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-[#22c55e]/15 text-[#22c55e]">
             <StepIcon aria-hidden="true" className="h-10 w-10" />
           </div>
           <h1 id="onboarding-title" className="mt-7 text-2xl font-bold leading-tight text-white">
@@ -91,7 +91,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         <button
           type="button"
           onClick={handleContinue}
-          className="mt-8 flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#f97316] px-6 py-4 text-lg font-bold text-[#090d16] shadow-lg transition hover:bg-[#ea580c] focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="mt-8 flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#22c55e] px-6 py-4 text-lg font-bold text-[#090d16] shadow-lg transition hover:bg-[#15803d] focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
           <span>{isLastStep ? 'Começar agora' : 'Continuar'}</span>
           <ArrowRight aria-hidden="true" className="h-6 w-6" />
