@@ -246,19 +246,21 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
                     <>
                       <span className="text-base font-semibold text-[#dae2fd]">Hora de descansar</span>
                       <div
-                        className={'mx-auto mt-3 flex h-40 w-40 items-center justify-center rounded-full border-[10px] text-4xl font-bold tabular-nums ' +
-                          (timers.restSeconds <= 10
-                            ? 'animate-pulse border-red-500 text-red-400'
-                            : 'border-[#f97316] text-[#f97316]')}
+                        className="mx-auto mt-3 h-40 w-40 rounded-full p-[10px]"
                         style={{
                           background: 'conic-gradient(#22c55e ' +
                             ((restDuration - timers.restSeconds) / Math.max(1, restDuration) * 100) +
-                            '%, #222a3d 0)',
+                            '%, #f97316 0)',
                         }}
-                        role="timer"
-                        aria-live="polite"
                       >
-                        {formatClock(timers.restSeconds)}
+                        <div
+                          className={'flex h-full w-full items-center justify-center rounded-full bg-[#0b1326] font-mono text-4xl font-bold tabular-nums ' +
+                            (timers.restSeconds <= 10 ? 'animate-pulse text-red-400' : 'text-[#f97316]')}
+                          role="timer"
+                          aria-live="polite"
+                        >
+                          {formatClock(timers.restSeconds)}
+                        </div>
                       </div>
                       <button
                         type="button"
