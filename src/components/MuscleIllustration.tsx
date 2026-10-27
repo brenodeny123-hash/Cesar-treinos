@@ -38,7 +38,7 @@ export const MuscleIllustration: React.FC<MuscleIllustrationProps> = ({
       role="img"
       aria-labelledby="muscle-illustration-title"
       className={'block h-auto max-w-full ' + className}
-      style={{ width: compact ? 60 : 'min(100%, 200px)', height: 'auto', maxHeight: compact ? 80 : 300 }}
+      style={compact ? { width: 60, height: 80 } : { width: 'min(100%, 200px)', height: 'auto', maxHeight: 300 }}
     >
       <title id="muscle-illustration-title">
         Ilustração da {viewLabel} do corpo com destaque em {highlight.label}
