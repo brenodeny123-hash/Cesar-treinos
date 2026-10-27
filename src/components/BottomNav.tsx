@@ -1,22 +1,27 @@
 import React from 'react';
-import { Home, Dumbbell, TrendingUp, Scale } from 'lucide-react';
+import { Dumbbell, Home, Scale, TrendingUp } from 'lucide-react';
+
+type AppTab = 'inicio' | 'treinos' | 'evolucao' | 'medidas';
 
 interface BottomNavProps {
-  currentTab: 'inicio' | 'treinos' | 'evolucao' | 'medidas';
-  onSelectTab: (tab: 'inicio' | 'treinos' | 'evolucao' | 'medidas') => void;
+  currentTab: AppTab;
+  onSelectTab: (tab: AppTab) => void;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab }) => {
   const tabs = [
-    { id: 'inicio' as const, label: 'Início', icon: Home },
-    { id: 'treinos' as const, label: 'Treinar', icon: Dumbbell },
-    { id: 'evolucao' as const, label: 'Evolução', icon: TrendingUp },
+    { id: 'inicio' as const, label: 'Meu treino', icon: Home },
+    { id: 'treinos' as const, label: 'Fichas', icon: Dumbbell },
+    { id: 'evolucao' as const, label: 'Progresso', icon: TrendingUp },
     { id: 'medidas' as const, label: 'Medidas', icon: Scale },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0b1326]/95 backdrop-blur-xl border-t border-white/10 pb-[env(safe-area-inset-bottom,0px)]">
-      <div className="max-w-md mx-auto grid grid-cols-4 items-center h-16 px-2">
+    <nav
+      aria-label="Navegação principal"
+      className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#0b1326]/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-xl"
+    >
+      <div className="mx-auto grid h-20 max-w-xl grid-cols-4 items-center px-2">
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = currentTab === tab.id;
@@ -25,15 +30,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
             <button
               key={tab.id}
               type="button"
+              aria-current={isActive ? 'page' : undefined}
               onClick={() => onSelectTab(tab.id)}
-              className={`min-h-[48px] min-w-[48px] flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
-                isActive ? 'text-[#f97316]' : 'text-[#94a3b8] hover:text-[#dae2fd]'
-              }`}
+              className={'mx-1 flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-base font-semibold transition-colors ' +
+                (isActive ? 'bg-[#22c55e]/15 text-[#22c55e]' : 'text-[#dae2fd] hover:bg-white/5')}
             >
-              <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
-              <span className={`text-[11px] font-medium tracking-tight ${isActive ? 'font-bold text-white' : ''}`}>
-                {tab.label}
-              </span>
+              <Icon aria-hidden="true" className={'h-5 w-5 ' + (isActive ? 'stroke-[2.5]' : 'stroke-2')} />
+              <span>{tab.label}</span>
             </button>
           );
         })}
