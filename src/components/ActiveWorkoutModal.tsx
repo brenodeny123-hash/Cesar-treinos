@@ -116,11 +116,6 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
     onClose();
   };
 
-  const updateCurrentSet = (updates: { weightKg?: number; reps?: number }) => {
-    if (!currentExercise || !nextIncompleteSet) return;
-    updateSet(currentExercise.id, nextIncompleteSet.id, updates);
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#0b1326] text-[#dae2fd]">
       <header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-[#111827] px-4 py-2">
