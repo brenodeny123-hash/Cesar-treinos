@@ -118,3 +118,26 @@ html body [class*="shadow-[#f97316]"] {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+html body [class*="hover:bg-[#ea580c]"]:hover {
+  background-color: #15803d !important;
+}
+
+html body [class*="to-[#ffb690]"] {
+  --tw-gradient-to: #dcfce7 var(--tw-gradient-to-position) !important;
+}
+
+html body [class*="text-[#91db2a]"],
+html body [class*="text-[#acf847]"] {
+  color: #22c55e !important;
+}
+
+html body [class*="bg-[#91db2a]"],
+html body [class*="bg-[#acf847]"] {
+  background-color: #22c55e !important;
+}
+
+html body [class*="border-[#91db2a]"],
+html body [class*="border-[#acf847]"] {
+  border-color: #22c55e !important;
+}
