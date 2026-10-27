@@ -13,6 +13,7 @@ import { CoachViewModal } from './components/CoachViewModal.tsx';
 import { AuthModal } from './components/AuthModal.tsx';
 import { StudentManagerModal } from './components/StudentManagerModal.tsx';
 import { SupabaseSyncModal } from './components/SupabaseSyncModal.tsx';
+import { Onboarding } from './components/Onboarding.tsx';
 
 const AppContent: React.FC = () => {
   const { activeWorkout, startWorkout } = useWorkout();
@@ -22,6 +23,13 @@ const AppContent: React.FC = () => {
   const [isCoachViewOpen, setIsCoachViewOpen] = useState(false);
   const [isStudentManagerOpen, setIsStudentManagerOpen] = useState(false);
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try {
+      return localStorage.getItem('pulsefit_onboarding_seen') !== 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const handleStartRoutine = (routineId: string) => {
     if (activeWorkout?.routineId !== routineId) {
@@ -37,7 +45,12 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col font-sans selection:bg-[#f97316]/30">
+    <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col font-sans selection:bg-[#22c55e]/30">
+      {showOnboarding && (
+        <div className="fixed inset-0 z-[100]">
+          <Onboarding onComplete={() => setShowOnboarding(false)} />
+        </div>
+      )}
       {/* Top Navbar with Auth & Controls */}
       <Navbar
         currentTab={currentTab}
