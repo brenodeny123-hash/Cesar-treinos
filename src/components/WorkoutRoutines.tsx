@@ -256,7 +256,7 @@ export const WorkoutRoutines: React.FC<WorkoutRoutinesProps> = ({ onStartRoutine
               <div className="grid grid-cols-[auto_1fr] items-center gap-4 p-5">
                 <span
                   className="flex h-14 w-14 items-center justify-center rounded-2xl text-2xl font-bold text-white"
-                  style={{ backgroundColor: routine.color || '#22c55e' }}
+                  style={{ backgroundColor: routine.color || '#22c55e', color: '#0b1326' }}
                 >
                   {routine.code}
                 </span>
@@ -285,7 +285,7 @@ export const WorkoutRoutines: React.FC<WorkoutRoutinesProps> = ({ onStartRoutine
                 <button
                   type="button"
                   onClick={() => onStartRoutine(routine.id)}
-                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl px-4 text-lg font-bold text-white shadow-md"
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl px-4 text-lg font-bold shadow-md"
                   style={{ backgroundColor: routine.color || '#22c55e' }}
                 >
                   <Play aria-hidden="true" className="h-6 w-6 fill-current" />
