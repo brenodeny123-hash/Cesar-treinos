@@ -20,7 +20,7 @@ export const RestTimerBar: React.FC = () => {
   const isComplete = restTimer.secondsRemaining === 0;
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 max-w-md mx-auto z-40 animate-in fade-in slide-in-from-bottom-4 duration-200">
+    <div className="rest-timer fixed bottom-20 left-4 right-4 max-w-md mx-auto z-40 animate-in fade-in slide-in-from-bottom-4 duration-200">
       <div className={`rounded-2xl p-3 shadow-xl backdrop-blur-md border ${
         isComplete 
           ? 'bg-[#172617]/95 border-[#91db2a]/50 shadow-[#91db2a]/10' 
