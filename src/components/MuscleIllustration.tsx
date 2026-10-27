@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import {
   getMuscleHighlight,
   getMuscleRegionFill,
@@ -25,6 +25,7 @@ export const MuscleIllustration: React.FC<MuscleIllustrationProps> = ({
     ? getMuscleHighlight('', muscleSecondary).primary
     : baseHighlight.secondary;
   const highlight = { ...baseHighlight, secondary: secondaryRegions };
+  const titleId = 'muscle-illustration-title-' + useId().replace(/:/g, '');
   const fill = (region: MuscleRegion) => getMuscleRegionFill(region, highlight);
   const viewLabel = highlight.view === 'front' ? 'frente' : 'costas';
   const width = compact ? 60 : 200;
@@ -36,11 +37,11 @@ export const MuscleIllustration: React.FC<MuscleIllustrationProps> = ({
       width={width}
       height={height}
       role="img"
-      aria-labelledby="muscle-illustration-title"
+      aria-labelledby={titleId}
       className={'block h-auto max-w-full ' + className}
       style={compact ? { width: 60, height: 80 } : { width: 'min(100%, 200px)', height: 'auto', maxHeight: 300 }}
     >
-      <title id="muscle-illustration-title">
+      <title id={titleId}>
         Ilustração da {viewLabel} do corpo com destaque em {highlight.label}
       </title>
 
