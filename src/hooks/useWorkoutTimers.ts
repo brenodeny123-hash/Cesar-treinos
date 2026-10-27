@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export type WorkoutPhase = 'waiting' | 'executing' | 'resting';
 
@@ -32,6 +32,8 @@ export function useWorkoutTimers({
   const [exerciseSeconds, setExerciseSeconds] = useState(0);
   const [restSeconds, setRestSeconds] = useState(0);
   const [restStartedAt, setRestStartedAt] = useState<number | null>(null);
+  const [activeRestDuration, setActiveRestDuration] = useState(0);
+  const exerciseStartedAt = useRef(Date.now());
   const [totalSeconds, setTotalSeconds] = useState(() => wholeSecondsSince(workoutStartTime));
 
   useEffect(() => {
@@ -46,12 +48,12 @@ export function useWorkoutTimers({
 
     const update = () => {
       if (phase === 'executing') {
-        setExerciseSeconds(wholeSecondsSince(exerciseStartedAt));
+        setExerciseSeconds(wholeSecondsSince(exerciseStartedAt.current));
         return;
       }
 
       if (restStartedAt === null) return;
-      const remaining = Math.max(0, restDurationSeconds - wholeSecondsSince(restStartedAt));
+      const remaining = Math.max(0, activeRestDuration - wholeSecondsSince(restStartedAt));
       setRestSeconds(remaining);
       if (remaining === 0) {
         setPhase('waiting');
@@ -62,16 +64,17 @@ export function useWorkoutTimers({
     const interval = window.setInterval(update, 200);
     update();
     return () => window.clearInterval(interval);
-  }, [phase, restStartedAt, restDurationSeconds]);
+  }, [phase, restStartedAt, activeRestDuration]);
 
   function startSet() {
-    exerciseStartedAt = Date.now();
+    exerciseStartedAt.current = Date.now();
     setExerciseSeconds(0);
     setPhase('executing');
   }
 
-  function completeSet() {
-    const duration = Math.max(1, restDurationSeconds);
+  function completeSet(durationSeconds = restDurationSeconds) {
+    const duration = Math.max(1, durationSeconds);
+    setActiveRestDuration(duration);
     setRestSeconds(duration);
     setRestStartedAt(Date.now());
     setPhase('resting');
@@ -95,4 +98,4 @@ export function useWorkoutTimers({
   };
 }
 
-let exerciseStartedAt = Date.now();
+
