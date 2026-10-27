@@ -72,6 +72,8 @@ export const muscleGroupMap: Record<string, MuscleHighlight> = {
   },
   gluteo: { primary: ['gluteo'], secondary: ['posterior-coxa'], view: 'back', label: 'Glúteo' },
   abdomen: { primary: ['abdomen'], secondary: ['peito'], view: 'front', label: 'Abdômen' },
+  trapezio: { primary: ['trapezio'], secondary: ['lat'], view: 'back', label: 'Trapézio' },
+  adutores: { primary: ['adutores'], secondary: ['gluteo'], view: 'back', label: 'Adutores' },
 };
 
 const EXERCISE_RULES: Array<{ words: string[]; highlight: MuscleHighlight }> = [
