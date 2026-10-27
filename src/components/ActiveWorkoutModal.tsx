@@ -241,7 +241,7 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
                   )}
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-[#0b1326] p-4 text-center">
+                <div className="rest-timer rounded-2xl border border-white/10 bg-[#0b1326] p-4 text-center">
                   {timers.phase === 'resting' ? (
                     <>
                       <span className="text-base font-semibold text-[#dae2fd]">Hora de descansar</span>
