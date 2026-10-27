@@ -13,7 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext.tsx';
-import { FALLBACK_IMAGE, useExerciseImage } from '../hooks/useExerciseImage.ts';
+import { MuscleIllustration } from './MuscleIllustration.tsx';
 import { formatClock, useWorkoutTimers } from '../hooks/useWorkoutTimers.ts';
 
 interface ActiveWorkoutModalProps {
@@ -48,7 +48,6 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
     workoutStartTime: activeWorkout?.startTime || Date.now(),
     restDurationSeconds: restDuration,
   });
-  const { imageUrl, isLoading } = useExerciseImage(currentExercise?.name || '');
 
   const completedSets = activeWorkout?.exercises.reduce(
     (total, exercise) => total + exercise.sets.filter(set => set.completed).length,
@@ -186,22 +185,12 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
             </div>
 
             <section className="overflow-hidden rounded-3xl border border-[#22c55e]/30 bg-[#111827] shadow-xl">
-              <div className="relative h-[35vh] min-h-48 max-h-72 bg-[#0b1326]">
-                {isLoading && (
-                  <div
-                    aria-label="Carregando imagem do exercício"
-                    className="absolute inset-0 animate-pulse bg-[#22c55e]/10"
-                  />
-                )}
-                <img
-                  src={imageUrl}
-                  alt={'Demonstração: ' + currentExercise.name}
-                  onError={event => {
-                    if (event.currentTarget.src !== FALLBACK_IMAGE) {
-                      event.currentTarget.src = FALLBACK_IMAGE;
-                    }
-                  }}
-                  className="h-full w-full object-contain"
+              <div className="flex h-[35vh] min-h-48 max-h-72 items-center justify-center bg-[#0b1326] px-3">
+                <MuscleIllustration
+                  exerciseName={currentExercise.name}
+                  muscleGroup={currentExercise.muscleGroup}
+                  muscleSecondary={currentExercise.muscleSecondary}
+                  className="mx-auto"
                 />
               </div>
 
@@ -233,10 +222,10 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
                       </div>
                     </div>
                   )}
-                  {currentExercise.notes && (
+                  {(currentExercise.tips || currentExercise.notes) && (
                     <div className="flex items-start gap-3 rounded-xl bg-[#171f33] p-3">
                       <Info aria-hidden="true" className="mt-0.5 h-6 w-6 shrink-0 text-[#dcfce7]" />
-                      <p className="text-base leading-6 text-[#dae2fd]">{currentExercise.notes}</p>
+                      <p className="text-base leading-6 text-[#dae2fd]">{currentExercise.tips || currentExercise.notes}</p>
                     </div>
                   )}
                 </div>
