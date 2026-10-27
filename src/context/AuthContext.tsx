@@ -128,7 +128,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, pass);
-      await updateProfile(cred.user, { displayName: name });
+      try {
+        await updateProfile(cred.user, { displayName: name });
+      } catch (profileError) {
+        // The account is already created; a profile update failure should not report signup as failed.
+        console.warn('Profile name update warning:', profileError);
+      }
       const mappedUser: AppUser = {
         uid: cred.user.uid,
         email: cred.user.email || email,
@@ -141,12 +146,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: true };
     } catch (err: unknown) {
       setLoading(false);
-      const errorMsg = (err as { code?: string; message?: string })?.message || '';
-      if (errorMsg.includes('email-already-in-use')) {
-        return { success: false, error: 'Este e-mail já está em uso.' };
+      const code = (err as { code?: string })?.code;
+      if (code === 'auth/email-already-in-use') {
+        return { success: false, error: 'Este e-mail já está cadastrado. Tente entrar ou recuperar sua senha.' };
       }
-      if (errorMsg.includes('weak-password')) {
+      if (code === 'auth/weak-password') {
         return { success: false, error: 'A senha deve ter no mínimo 6 caracteres.' };
+      }
+      if (code === 'auth/invalid-email') {
+        return { success: false, error: 'Confira o formato do e-mail informado.' };
+      }
+      if (code === 'auth/operation-not-allowed') {
+        return { success: false, error: 'O cadastro por e-mail está desativado no Firebase. Ative o provedor E-mail/senha nas configurações de autenticação do projeto.' };
+      }
+      if (code === 'auth/network-request-failed') {
+        return { success: false, error: 'Falha de conexão. Verifique sua internet e tente novamente.' };
       }
       return { success: false, error: 'Não foi possível criar a conta. Verifique os dados e tente novamente.' };
     }
