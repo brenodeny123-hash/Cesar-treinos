@@ -85,6 +85,15 @@ function cacheImage(key: string, value: string): void {
   }
 }
 
+function verifyImage(url: string): Promise<boolean> {
+  return new Promise(resolve => {
+    const image = new window.Image();
+    image.onload = () => resolve(true);
+    image.onerror = () => resolve(false);
+    image.src = url;
+  });
+}
+
 async function findExerciseImage(name: string, cacheKey: string): Promise<string> {
   const cached = readCachedImage(cacheKey);
   if (cached) return cached === NOT_FOUND ? FALLBACK_IMAGE : cached;
@@ -106,6 +115,12 @@ async function findExerciseImage(name: string, cacheKey: string): Promise<string
   }
 
   const imageUrl = EXERCISE_IMAGE_BASE + '/' + encodeURIComponent(record.id) + '/0.jpg';
+  const isAvailable = await verifyImage(imageUrl);
+  if (!isAvailable) {
+    cacheImage(cacheKey, NOT_FOUND);
+    return FALLBACK_IMAGE;
+  }
+
   cacheImage(cacheKey, imageUrl);
   return imageUrl;
 }
