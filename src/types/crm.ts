@@ -8,10 +8,14 @@ export interface ExerciseSet {
   rpe?: number; // Rate of Perceived Exertion (1-10)
 }
 
+export type WorkoutPlan = 'A' | 'B' | 'C';
+
 export interface ExerciseItem {
   id: string;
   name: string;
   muscleGroup: 'Peito' | 'Costas' | 'Pernas' | 'Ombros' | 'Bíceps' | 'Tríceps' | 'Abdômen' | 'Glúteo';
+  muscleSecondary?: string;
+  tips?: string;
   targetSets: number;
   targetReps: string; // e.g. "8-12"
   defaultRestSec: number;
@@ -24,6 +28,8 @@ export interface ExerciseItem {
 
 export interface WorkoutRoutine {
   id: string;
+  plan?: WorkoutPlan;
+  shortName?: string;
   code: string; // A, B, C, D, E, Custom...
   title: string;
   focusMuscles: string;
