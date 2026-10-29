@@ -1,0 +1,6 @@
+{
+  "name": "PulseFit - CRM & Treino do Aluno",
+  "description": "Aplicativo para alunos de academia gerenciarem treinos, registrarem séries e cargas em tempo real, cronometrarem descanso e acompanharem a evolução física semanal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
