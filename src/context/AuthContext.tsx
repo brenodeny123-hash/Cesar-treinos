@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { getSupabaseClient, supabase } from '../lib/supabase.ts';
+import {
+  getSupabaseClient,
+  supabase,
+  supabaseRuntimeDiagnostics,
+} from '../lib/supabase.ts';
 
 export interface AppUser {
   uid: string;
@@ -11,8 +15,30 @@ export interface AppUser {
 }
 
 type AuthResult = { success: boolean; error?: string; message?: string };
-type AuthAction = 'login' | 'register' | 'reset';
-type AuthErrorLike = { code?: string; message?: string; name?: string; status?: number };
+type AuthAction = 'login' | 'register' | 'reset' | 'logout';
+type AuthErrorLike = {
+  code?: string;
+  message?: string;
+  name?: string;
+  status?: number;
+  statusCode?: number;
+};
+
+type AuthErrorCategory =
+  | 'configuration'
+  | 'invalid_api_key'
+  | 'domain_not_allowed'
+  | 'provider_disabled'
+  | 'email_not_confirmed'
+  | 'user_not_found'
+  | 'profile_missing'
+  | 'invalid_credentials'
+  | 'rate_limited'
+  | 'permission_denied'
+  | 'service_unavailable'
+  | 'timeout'
+  | 'network'
+  | 'other';
 
 interface AuthContextType {
   user: AppUser | null;
@@ -33,93 +59,197 @@ export const DEMO_ALLOWED = import.meta.env.DEV || import.meta.env.VITE_ALLOW_DE
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const mapAuthError = (error: unknown, action: AuthAction): string => {
+const getAuthErrorDetails = (error: unknown) => {
   const details = error && typeof error === 'object' ? (error as AuthErrorLike) : {};
   const code = details.code?.toLowerCase() ?? '';
   const message = details.message?.toLowerCase() ?? '';
   const combined = `${code} ${message}`;
+  const status = Number.isInteger(details.status)
+    ? details.status
+    : Number.isInteger(details.statusCode)
+      ? details.statusCode
+      : undefined;
+
+  return { details, code, combined, status };
+};
+
+const classifyAuthError = (error: unknown): AuthErrorCategory => {
+  const { details, code, combined, status } = getAuthErrorDetails(error);
 
   if (
+    combined.includes('vite_supabase_') ||
     (combined.includes('supabase') &&
-      (combined.includes('configuração') || combined.includes('configure'))) ||
+      (combined.includes('configuração') ||
+        combined.includes('configure') ||
+        combined.includes('url válida') ||
+        combined.includes('incompleta'))) ||
     combined.includes('service_role') ||
     combined.includes('sb_secret_')
   ) {
-    return 'O acesso ao Supabase não está configurado corretamente. Confira as variáveis de ambiente do projeto.';
+    return 'configuration';
   }
   if (
-    combined.includes('pgrst116') ||
-    combined.includes('multiple (or no) rows returned') ||
-    combined.includes('perfil ausente')
+    ['invalid_api_key', 'no_api_key', 'bad_jwt', 'pgrst301'].includes(code) ||
+    combined.includes('invalid api key') ||
+    combined.includes('api key not valid') ||
+    (status === 401 && !code.includes('invalid_credentials'))
   ) {
-    return 'Sua conta foi autenticada, mas o perfil não foi encontrado. Confira o cadastro do perfil e as políticas RLS do Supabase.';
+    return 'invalid_api_key';
   }
   if (
-    combined.includes('redirect_to_not_allowed') ||
+    code.includes('redirect') && (code.includes('not_allowed') || code.includes('invalid')) ||
     combined.includes('redirect url not allowed') ||
-    (combined.includes('redirect url') && combined.includes('not allowed')) ||
+    combined.includes('redirect url') && combined.includes('not allowed') ||
     combined.includes('email_redirect_to') ||
     combined.includes('not allowed uri')
   ) {
-    return 'O endereço de redirecionamento não está autorizado no Supabase. Confira as URLs permitidas nas configurações de autenticação.';
+    return 'domain_not_allowed';
   }
   if (
-    combined.includes('signup_disabled') ||
+    [
+      'provider_disabled',
+      'email_provider_disabled',
+      'signup_disabled',
+      'operation_not_allowed',
+      'unsupported_provider',
+    ].includes(code) ||
     combined.includes('signups not allowed') ||
-    combined.includes('email_provider_disabled') ||
     combined.includes('provider is disabled')
   ) {
-    return 'Este método de autenticação está desativado no Supabase. Habilite o provedor de e-mail nas configurações de autenticação.';
+    return 'provider_disabled';
   }
-  if (combined.includes('email_not_confirmed') || combined.includes('email not confirmed')) {
-    return 'Seu e-mail ainda não foi confirmado. Confira sua caixa de entrada e confirme o cadastro.';
+  if (code.includes('email_not_confirmed') || combined.includes('email not confirmed')) {
+    return 'email_not_confirmed';
   }
   if (
-    combined.includes('invalid_credentials') ||
+    code === 'user_not_found' ||
+    code === 'user_not_exists' ||
+    combined.includes('user not found')
+  ) {
+    return 'user_not_found';
+  }
+  if (
+    code === 'invalid_credentials' ||
     combined.includes('invalid login credentials') ||
     combined.includes('wrong password')
   ) {
-    return 'E-mail ou senha incorretos.';
-  }
-  if (combined.includes('user_already_exists') || combined.includes('already registered')) {
-    return 'Este e-mail já está cadastrado. Tente entrar ou recuperar sua senha.';
-  }
-  if (combined.includes('weak_password') || combined.includes('password should be')) {
-    return 'A senha deve ter pelo menos 6 caracteres.';
-  }
-  if (combined.includes('invalid_email') || combined.includes('email address is invalid')) {
-    return 'Confira o formato do e-mail informado.';
+    return 'invalid_credentials';
   }
   if (
-    details.status === 429 ||
+    status === 429 ||
     combined.includes('too many requests') ||
     combined.includes('rate limit') ||
     combined.includes('over_request_rate_limit')
   ) {
-    return 'Muitas tentativas em pouco tempo. Aguarde alguns minutos antes de tentar novamente.';
+    return 'rate_limited';
   }
-  if (details.status === 401 || details.status === 403 || combined.includes('42501')) {
-    return 'A autenticação foi recusada por falta de permissão. Confira a sessão e as políticas de acesso do Supabase.';
+  if (
+    status === 403 ||
+    code === '42501' ||
+    code === 'insufficient_permissions' ||
+    combined.includes('row-level security')
+  ) {
+    return 'permission_denied';
   }
-  if (details.status !== undefined && details.status >= 500) {
-    return 'O serviço de autenticação está temporariamente indisponível. Tente novamente mais tarde.';
+  if (status !== undefined && status >= 500) {
+    return 'service_unavailable';
+  }
+  if (
+    details.name === 'AbortError' ||
+    details.name === 'TimeoutError' ||
+    code.includes('timeout') ||
+    code === 'etimedout'
+  ) {
+    return 'timeout';
   }
   if (
     combined.includes('failed to fetch') ||
     combined.includes('fetch failed') ||
     combined.includes('networkerror') ||
     combined.includes('network request failed') ||
-    (details.name === 'TypeError' && combined.includes('load failed'))
+    combined.includes('load failed') ||
+    details.name === 'AuthRetryableFetchError' ||
+    (details.name === 'TypeError' && status === undefined)
   ) {
-    return 'Falha de conexão. Verifique sua internet e tente novamente.';
+    return 'network';
   }
-  if (action === 'reset') {
-    return 'Não foi possível enviar o e-mail de recuperação. Tente novamente.';
+
+  if (
+    code === 'pgrst116' ||
+    combined.includes('multiple (or no) rows returned') ||
+    combined.includes('perfil ausente')
+  ) {
+    return 'profile_missing';
   }
-  if (action === 'register') {
-    return 'Não foi possível criar a conta. Verifique os dados e tente novamente.';
+
+  return 'other';
+};
+
+const mapAuthError = (error: unknown, action: AuthAction): string => {
+  const { code, combined } = getAuthErrorDetails(error);
+
+  switch (classifyAuthError(error)) {
+    case 'configuration':
+      return 'O acesso ao Supabase não está configurado corretamente. Confira as variáveis de ambiente do projeto e faça um novo deploy.';
+    case 'invalid_api_key':
+      return 'O Supabase recusou a chave pública ou o token. Confira VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas variáveis do deploy.';
+    case 'domain_not_allowed':
+      return 'O endereço de redirecionamento não está autorizado. Confira Authentication > URL Configuration no painel do Supabase.';
+    case 'provider_disabled':
+      return 'O login por e-mail está desativado. Habilite Email provider em Authentication > Sign In / Providers no Supabase.';
+    case 'email_not_confirmed':
+      return 'Seu e-mail ainda não foi confirmado. Confira sua caixa de entrada e confirme o cadastro.';
+    case 'user_not_found':
+      return 'Não foi possível encontrar essa conta. Confira o e-mail ou faça seu cadastro.';
+    case 'profile_missing':
+      return 'Sua conta foi autenticada, mas o perfil não foi encontrado. Confira o cadastro do perfil e as políticas RLS da tabela profiles.';
+    case 'invalid_credentials':
+      return 'E-mail ou senha incorretos. O Supabase pode usar a mesma resposta para usuário inexistente e senha incorreta.';
+    case 'rate_limited':
+      return 'Muitas tentativas em pouco tempo. Aguarde alguns minutos antes de tentar novamente.';
+    case 'permission_denied':
+      return 'A autenticação ou o acesso ao perfil foi recusado. Confira a sessão e as políticas RLS da tabela profiles.';
+    case 'service_unavailable':
+      return 'O serviço Supabase está temporariamente indisponível. Tente novamente mais tarde.';
+    case 'timeout':
+      return 'A conexão com o Supabase excedeu o tempo limite. Verifique a rede e tente novamente.';
+    case 'network':
+      return 'Falha de rede ao conectar ao Supabase. Verifique a conexão, DNS, VPN/proxy e bloqueios do navegador.';
+    case 'other':
+      if (code === 'user_already_exists' || combined.includes('already registered')) {
+        return 'Este e-mail já está cadastrado. Tente entrar ou recuperar sua senha.';
+      }
+      if (code === 'weak_password' || combined.includes('password should be')) {
+        return 'A senha deve ter pelo menos 6 caracteres.';
+      }
+      if (code === 'invalid_email' || combined.includes('email address is invalid')) {
+        return 'Confira o formato do e-mail informado.';
+      }
+      if (action === 'reset') {
+        return 'Não foi possível enviar o e-mail de recuperação. Confira o endereço e tente novamente.';
+      }
+      if (action === 'register') {
+        return 'Não foi possível criar a conta. Verifique os dados e tente novamente.';
+      }
+      return 'Não foi possível entrar. Verifique os dados e tente novamente.';
   }
-  return 'Não foi possível entrar. Verifique seus dados e tente novamente.';
+};
+
+const logAuthFailure = (action: AuthAction, error: unknown): void => {
+  const { details, code, status } = getAuthErrorDetails(error);
+  const safeCode = /^[a-z0-9_-]{1,80}$/i.test(code) ? code : 'unknown';
+  const safeName =
+    details.name && /^[a-z0-9_$.-]{1,80}$/i.test(details.name) ? details.name : 'unknown';
+
+  console.warn('[PulseFit auth] request failed', {
+    action,
+    category: classifyAuthError(error),
+    code: safeCode,
+    httpStatus: status !== undefined && status > 0 ? status : null,
+    applicationOrigin: typeof window === 'undefined' ? 'unknown' : window.location.origin,
+    errorName: safeName,
+    ...supabaseRuntimeDiagnostics,
+  });
 };
 
 const mapAuthenticatedUser = async (authUser: User): Promise<AppUser> => {
@@ -174,7 +304,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsAuthModalOpen(false);
         })
         .catch((error: unknown) => {
-          console.error('Não foi possível carregar o perfil do usuário no Supabase.', error);
+          logAuthFailure('login', error);
           setUser(null);
           setAuthError(mapAuthError(error, 'login'));
           setIsAuthModalOpen(true);
@@ -201,6 +331,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthModalOpen(false);
       return { success: true };
     } catch (error: unknown) {
+      logAuthFailure('login', error);
       const message = mapAuthError(error, 'login');
       setAuthError(message);
       return { success: false, error: message };
@@ -232,6 +363,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         message: 'Conta criada. Confirme seu e-mail pelo link enviado antes de entrar.',
       };
     } catch (error: unknown) {
+      logAuthFailure('register', error);
       const message = mapAuthError(error, 'register');
       setAuthError(message);
       return { success: false, error: message };
@@ -246,7 +378,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await getSupabaseClient().auth.signOut();
       if (error) throw error;
     } catch (error: unknown) {
-      const message = mapAuthError(error, 'login');
+      logAuthFailure('logout', error);
+      const message = mapAuthError(error, 'logout');
       setAuthError(message);
       setIsAuthModalOpen(true);
       console.error('Não foi possível encerrar a sessão do Supabase.', error);
@@ -260,6 +393,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       return { success: true };
     } catch (error: unknown) {
+      logAuthFailure('reset', error);
       const message = mapAuthError(error, 'reset');
       setAuthError(message);
       return { success: false, error: message };

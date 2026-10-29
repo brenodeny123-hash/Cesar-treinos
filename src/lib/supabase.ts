@@ -5,6 +5,16 @@ const url = import.meta.env.VITE_SUPABASE_URL?.trim();
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 const hasPrivilegedKey = Boolean(anonKey && isSupabaseServiceRoleKey(anonKey));
 
+type SupabaseConfigurationIssue =
+  | 'missing_url'
+  | 'missing_public_key'
+  | 'privileged_key'
+  | 'invalid_url'
+  | 'invalid_protocol';
+
+let configurationIssue: SupabaseConfigurationIssue | null = null;
+let projectHost: string | null = null;
+
 if (import.meta.env.PROD && (!url || !anonKey)) {
   console.warn(
     'Supabase não configurado neste deploy. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas variáveis de ambiente da Vercel e faça um novo deploy.',
@@ -15,21 +25,51 @@ if (hasPrivilegedKey) {
 }
 
 const config = (() => {
-  if (!url || !anonKey || hasPrivilegedKey) return null;
+  if (!url) {
+    configurationIssue = 'missing_url';
+    return null;
+  }
+  if (!anonKey) {
+    configurationIssue = 'missing_public_key';
+    return null;
+  }
+  if (hasPrivilegedKey) {
+    configurationIssue = 'privileged_key';
+    return null;
+  }
 
   try {
     const parsedUrl = new URL(url);
+    projectHost = parsedUrl.host;
     if (
       parsedUrl.protocol !== 'https:' &&
       !(parsedUrl.protocol === 'http:' && parsedUrl.hostname === 'localhost')
-    ) return null;
+    ) {
+      configurationIssue = 'invalid_protocol';
+      return null;
+    }
     return { url, anonKey };
   } catch {
+    configurationIssue = 'invalid_url';
     return null;
   }
 })();
 
 export const isSupabaseConfigured = config !== null;
+export const supabaseRuntimeDiagnostics = Object.freeze({
+  configured: isSupabaseConfigured,
+  projectHost,
+  publicKeyType: !anonKey
+    ? 'missing'
+    : hasPrivilegedKey
+      ? 'privileged'
+      : anonKey.startsWith('sb_publishable_')
+        ? 'publishable'
+        : anonKey.split('.').length === 3
+          ? 'legacy_jwt'
+          : 'unrecognized',
+  configurationIssue,
+});
 export const supabase: SupabaseClient | null = config
   ? createClient(config.url, config.anonKey, {
       auth: {
@@ -41,8 +81,17 @@ export const supabase: SupabaseClient | null = config
 
 export const getSupabaseClient = (): SupabaseClient => {
   if (!supabase) {
-    if (hasPrivilegedKey) {
-      throw new Error('VITE_SUPABASE_ANON_KEY não pode conter uma chave service_role ou secret. Use somente uma chave pública.');
+    switch (configurationIssue) {
+      case 'missing_url':
+        throw new Error('VITE_SUPABASE_URL não foi configurada.');
+      case 'missing_public_key':
+        throw new Error('VITE_SUPABASE_ANON_KEY não foi configurada.');
+      case 'privileged_key':
+        throw new Error('VITE_SUPABASE_ANON_KEY não pode conter uma chave service_role ou secret. Use somente uma chave pública.');
+      case 'invalid_url':
+        throw new Error('VITE_SUPABASE_URL não é uma URL válida.');
+      case 'invalid_protocol':
+        throw new Error('VITE_SUPABASE_URL deve usar HTTPS, exceto em localhost.');
     }
     throw new Error('Configuração do Supabase incompleta. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
   }
@@ -52,8 +101,11 @@ export const getSupabaseClient = (): SupabaseClient => {
 export const supabaseService = {
   async testConnection(): Promise<{ success: boolean; message: string }> {
     if (!config) {
-      if (hasPrivilegedKey) {
+      if (configurationIssue === 'privileged_key') {
         return { success: false, message: 'A chave configurada é privilegiada. Use somente uma chave pública do Supabase no navegador.' };
+      }
+      if (configurationIssue === 'invalid_url' || configurationIssue === 'invalid_protocol') {
+        return { success: false, message: 'VITE_SUPABASE_URL é inválida. Configure a URL HTTPS do projeto Supabase.' };
       }
       return { success: false, message: 'Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY para testar a conexão.' };
     }
