@@ -12,7 +12,7 @@ export interface AppUser {
 
 type AuthResult = { success: boolean; error?: string; message?: string };
 type AuthAction = 'login' | 'register' | 'reset';
-type AuthErrorLike = { code?: string; message?: string; name?: string };
+type AuthErrorLike = { code?: string; message?: string; name?: string; status?: number };
 
 interface AuthContextType {
   user: AppUser | null;
@@ -39,6 +39,38 @@ const mapAuthError = (error: unknown, action: AuthAction): string => {
   const message = details.message?.toLowerCase() ?? '';
   const combined = `${code} ${message}`;
 
+  if (
+    (combined.includes('supabase') &&
+      (combined.includes('configuração') || combined.includes('configure'))) ||
+    combined.includes('service_role') ||
+    combined.includes('sb_secret_')
+  ) {
+    return 'O acesso ao Supabase não está configurado corretamente. Confira as variáveis de ambiente do projeto.';
+  }
+  if (
+    combined.includes('pgrst116') ||
+    combined.includes('multiple (or no) rows returned') ||
+    combined.includes('perfil ausente')
+  ) {
+    return 'Sua conta foi autenticada, mas o perfil não foi encontrado. Confira o cadastro do perfil e as políticas RLS do Supabase.';
+  }
+  if (
+    combined.includes('redirect_to_not_allowed') ||
+    combined.includes('redirect url not allowed') ||
+    (combined.includes('redirect url') && combined.includes('not allowed')) ||
+    combined.includes('email_redirect_to') ||
+    combined.includes('not allowed uri')
+  ) {
+    return 'O endereço de redirecionamento não está autorizado no Supabase. Confira as URLs permitidas nas configurações de autenticação.';
+  }
+  if (
+    combined.includes('signup_disabled') ||
+    combined.includes('signups not allowed') ||
+    combined.includes('email_provider_disabled') ||
+    combined.includes('provider is disabled')
+  ) {
+    return 'Este método de autenticação está desativado no Supabase. Habilite o provedor de e-mail nas configurações de autenticação.';
+  }
   if (combined.includes('email_not_confirmed') || combined.includes('email not confirmed')) {
     return 'Seu e-mail ainda não foi confirmado. Confira sua caixa de entrada e confirme o cadastro.';
   }
@@ -59,10 +91,25 @@ const mapAuthError = (error: unknown, action: AuthAction): string => {
     return 'Confira o formato do e-mail informado.';
   }
   if (
-    details.name === 'TypeError' ||
+    details.status === 429 ||
+    combined.includes('too many requests') ||
+    combined.includes('rate limit') ||
+    combined.includes('over_request_rate_limit')
+  ) {
+    return 'Muitas tentativas em pouco tempo. Aguarde alguns minutos antes de tentar novamente.';
+  }
+  if (details.status === 401 || details.status === 403 || combined.includes('42501')) {
+    return 'A autenticação foi recusada por falta de permissão. Confira a sessão e as políticas de acesso do Supabase.';
+  }
+  if (details.status !== undefined && details.status >= 500) {
+    return 'O serviço de autenticação está temporariamente indisponível. Tente novamente mais tarde.';
+  }
+  if (
     combined.includes('failed to fetch') ||
-    combined.includes('network') ||
-    combined.includes('fetch failed')
+    combined.includes('fetch failed') ||
+    combined.includes('networkerror') ||
+    combined.includes('network request failed') ||
+    (details.name === 'TypeError' && combined.includes('load failed'))
   ) {
     return 'Falha de conexão. Verifique sua internet e tente novamente.';
   }
@@ -83,6 +130,9 @@ const mapAuthenticatedUser = async (authUser: User): Promise<AppUser> => {
     .single();
 
   if (error) throw error;
+  if (!profile) {
+    throw new Error('Perfil ausente para o usuário autenticado. Verifique o trigger de cadastro e as políticas RLS da tabela profiles.');
+  }
 
   const role = profile.role === 'coach' || profile.role === 'admin' ? 'coach' : 'student';
   return {
@@ -126,7 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .catch((error: unknown) => {
           console.error('Não foi possível carregar o perfil do usuário no Supabase.', error);
           setUser(null);
-          setAuthError('Não foi possível carregar seu perfil. Tente entrar novamente.');
+          setAuthError(mapAuthError(error, 'login'));
           setIsAuthModalOpen(true);
         })
         .finally(() => setLoading(false));
