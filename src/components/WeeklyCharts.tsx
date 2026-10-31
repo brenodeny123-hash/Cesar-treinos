@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatFortalezaDate, parseFortalezaDate } from '../lib/time.ts';
 import { useWorkout } from '../context/WorkoutContext.tsx';
 import {
   TrendingUp,
@@ -49,8 +50,10 @@ export const WeeklyCharts: React.FC = () => {
       selectedExercise.toLowerCase().includes(e.name.toLowerCase())
     );
     if (foundEx && foundEx.maxWeightKg > 0) {
-      const d = new Date(`${log.date}T12:00:00-03:00`);
-      const displayDate = `${d.getDate()}/${d.getMonth() + 1}`;
+      const displayDate = formatFortalezaDate(parseFortalezaDate(log.date), {
+        day: '2-digit',
+        month: '2-digit',
+      });
       progressionPoints.push({
         date: log.date,
         displayDate,
@@ -381,8 +384,7 @@ export const WeeklyCharts: React.FC = () => {
 
         <div className="space-y-2">
           {workoutLogs.slice(0, 5).map(log => {
-            const dateObj = new Date(`${log.date}T12:00:00-03:00`);
-            const dateFormatted = dateObj.toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza',
+            const dateFormatted = formatFortalezaDate(parseFortalezaDate(log.date), {
               weekday: 'short',
               day: '2-digit',
               month: 'short',

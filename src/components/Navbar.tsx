@@ -1,8 +1,8 @@
 import React from 'react';
+import { ThemeToggle } from './ThemeToggle.tsx';
 import { useWorkout } from '../context/WorkoutContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import {
-  Dumbbell,
   UserCheck,
   RotateCcw,
   LogIn,
@@ -36,15 +36,13 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
         {/* Zone 1: Brand Wordmark */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#00ff66] to-[#ffb690] flex items-center justify-center text-[#09090b] font-display font-black text-lg shadow-md shadow-[#00ff66]/20">
-            <Dumbbell className="w-5 h-5 stroke-[2.5]" />
-          </div>
+          <img src="/cesar-avatar-small.jpg" alt="Cesar" className="w-10 h-10 rounded-full object-cover object-[50%_30%] border-2 border-[#00ff66]/70" />
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#00ff66] block leading-none">
               #TeamCesar
             </span>
             <span className="text-base font-bold font-display text-white tracking-tight leading-tight">
-              PulseFit
+              Cesar Treinos
             </span>
           </div>
         </div>
@@ -115,6 +113,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="hidden sm:inline">CRM Cesar</span>
           </button>
           )}
+
+          <ThemeToggle />
 
           <button
             type="button"

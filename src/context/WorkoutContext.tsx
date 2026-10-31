@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { useAuth } from './AuthContext.tsx';
-import { todayFortaleza, formatDateBR, countInCurrentWeek, computeStreak } from '../lib/time.ts';
+import { todayFortaleza, formatFortalezaDate, formatDateBR, countInCurrentWeek, computeStreak, addDays } from '../lib/time.ts';
 import { createFreshProfile } from '../lib/userData.ts';
+import { isUuid, mergeLogs, pullLogs, pushLog } from '../lib/remoteLogs.ts';
 import {
   WorkoutRoutine,
   CompletedWorkoutLog,
@@ -35,6 +36,7 @@ interface RestTimerState {
   active: boolean;
   totalSeconds: number;
   secondsRemaining: number;
+  endsAt?: number; // horário absoluto do fim (evita atraso com a tela bloqueada)
   exerciseName?: string;
   setNumber?: number;
 }
@@ -53,7 +55,7 @@ interface WorkoutContextType {
   // Active workout execution
   startWorkout: (routineId: string) => void;
   updateSet: (exerciseId: string, setId: string, updates: Partial<ExerciseSet>) => void;
-  toggleSetCompleted: (exerciseId: string, setId: string) => void;
+  toggleSetCompleted: (exerciseId: string, setId: string, options?: { skipRest?: boolean; onlyComplete?: boolean }) => void;
   quickAdjustWeight: (exerciseId: string, setId: string, deltaKg: number) => void;
   quickAdjustReps: (exerciseId: string, setId: string, deltaReps: number) => void;
   addSetToExercise: (exerciseId: string) => void;
@@ -88,6 +90,20 @@ interface WorkoutContextType {
 
 const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
 
+/** UUID v4 que funciona também em http (celular na rede local), onde crypto.randomUUID não existe. */
+const newId = (): string => {
+  const c = (globalThis as { crypto?: Crypto }).crypto;
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+  const b = new Uint8Array(16);
+  if (c && typeof c.getRandomValues === 'function') c.getRandomValues(b);
+  else for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256);
+  b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+  const h = Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+};
+
+const DEMO_DATA_VERSION = '3-lucas-only';
+
 // Web Audio API beep
 const playTimerBeep = () => {
   try {
@@ -116,6 +132,15 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const k = (name: string) => `pulsefit:${uid}:${name}`;
   // Dados de exemplo só existem em contas de demonstração; contas reais começam zeradas.
   function seed<T>(demo: T, fresh: T): T { return isDemo ? demo : fresh; }
+  // Versão dos dados de demonstração: ao mudar, descarta o que ficou salvo no navegador (ex.: alunos fictícios antigos).
+  if (isDemo) {
+    try {
+      if (localStorage.getItem(k('dataver')) !== DEMO_DATA_VERSION) {
+        ['routines', 'students', 'logs', 'measurements', 'prs', 'profile', 'active_workout', 'pending_logs'].forEach(n => localStorage.removeItem(k(n)));
+        localStorage.setItem(k('dataver'), DEMO_DATA_VERSION);
+      }
+    } catch { /* sem armazenamento */ }
+  }
   // Routines state
   const [routines, setRoutines] = useState<WorkoutRoutine[]>(() => {
     try {
@@ -193,12 +218,29 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     secondsRemaining: 0,
   });
 
+  // Histórico na nuvem (por aluno, protegido por RLS): reenvia pendências e baixa o que existe
+  const readPending = (): CompletedWorkoutLog[] => { try { return JSON.parse(localStorage.getItem(k('pending_logs')) ?? '[]'); } catch { return []; } };
+  const writePending = (list: CompletedWorkoutLog[]) => { try { localStorage.setItem(k('pending_logs'), JSON.stringify(list)); } catch { /* sem armazenamento */ } };
+  useEffect(() => {
+    if (isDemo || !isUuid(uid)) return;
+    let active = true;
+    (async () => {
+      const stillPending: CompletedWorkoutLog[] = [];
+      for (const log of readPending()) if (!(await pushLog(uid, log))) stillPending.push(log);
+      writePending(stillPending);
+      const remote = await pullLogs(uid);
+      if (active && remote) setWorkoutLogs(local => mergeLogs(local, remote));
+    })();
+    return () => { active = false; };
+  }, [uid, isDemo]);
+
   // Sequência/semana/total derivados dos registros reais (fuso America/Fortaleza)
   useEffect(() => {
-    if (isDemo) return;
-    const dates = workoutLogs.map(l => l.date);
+    // Só contam treinos a partir da data de início do treino do aluno.
+    const start = /^\d{4}-\d{2}-\d{2}$/.test(studentProfile.joinedDate) ? studentProfile.joinedDate : '';
+    const dates = workoutLogs.map(l => l.date).filter(d => !start || d >= start);
     setStudentProfile(prev => ({ ...prev, totalWorkoutsLogged: dates.length, weeklyCompleted: countInCurrentWeek(dates), streakDays: computeStreak(dates) }));
-  }, [workoutLogs, isDemo]);
+  }, [workoutLogs, studentProfile.joinedDate]);
 
   // Persistence effects
   useEffect(() => {
@@ -276,20 +318,18 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => clearInterval(interval);
   }, [activeWorkout?.startTime]);
 
-  // Rest countdown
+  // Rest countdown (calculado pelo horário absoluto)
   useEffect(() => {
     if (!restTimer.active) return;
-    const timer = setInterval(() => {
-      setRestTimer(prev => {
-        if (!prev.active) return prev;
-        if (prev.secondsRemaining <= 1) {
-          playTimerBeep();
-          return { ...prev, active: false, secondsRemaining: 0 };
-        }
-        return { ...prev, secondsRemaining: prev.secondsRemaining - 1 };
-      });
-    }, 1000);
-    return () => clearInterval(timer);
+    const tick = () => setRestTimer(prev => {
+      if (!prev.active) return prev;
+      const remaining = prev.endsAt ? Math.max(0, Math.ceil((prev.endsAt - Date.now()) / 1000)) : Math.max(0, prev.secondsRemaining - 1);
+      if (remaining <= 0) { playTimerBeep(); return { ...prev, active: false, secondsRemaining: 0 }; }
+      return remaining === prev.secondsRemaining ? prev : { ...prev, secondsRemaining: remaining };
+    });
+    const timer = setInterval(tick, 500);
+    document.addEventListener('visibilitychange', tick);
+    return () => { clearInterval(timer); document.removeEventListener('visibilitychange', tick); };
   }, [restTimer.active]);
 
   // --- WORKOUT EXECUTION METHODS ---
@@ -342,6 +382,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       active: true,
       totalSeconds: seconds,
       secondsRemaining: seconds,
+      endsAt: Date.now() + seconds * 1000,
       exerciseName,
       setNumber,
     });
@@ -354,6 +395,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return {
         ...prev,
         active: newRemaining > 0,
+        endsAt: prev.endsAt ? prev.endsAt + deltaSeconds * 1000 : prev.endsAt,
         secondsRemaining: newRemaining,
         totalSeconds: newTotal,
       };
@@ -364,11 +406,12 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setRestTimer(prev => ({ ...prev, active: false, secondsRemaining: 0 }));
   };
 
-  const toggleSetCompleted = (exerciseId: string, setId: string) => {
+  const toggleSetCompleted = (exerciseId: string, setId: string, options?: { skipRest?: boolean; onlyComplete?: boolean }) => {
     if (!activeWorkout) return;
 
     const currentEx = activeWorkout.exercises.find(e => e.id === exerciseId);
     const targetSet = currentEx?.sets.find(s => s.id === setId);
+    if (options?.onlyComplete && targetSet?.completed) return; // nunca registrar a mesma série duas vezes
     const willBeCompleted = targetSet ? !targetSet.completed : true;
 
     setActiveWorkout(prev => {
@@ -392,7 +435,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       };
     });
 
-    if (willBeCompleted && currentEx) {
+    if (willBeCompleted && currentEx && !options?.skipRest) {
       const restDuration = currentEx.defaultRestSec || 60;
       startRestTimer(restDuration, currentEx.name, targetSet?.setNumber);
     }
@@ -519,7 +562,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 exerciseName: ex.name,
                 weightKg: s.weightKg,
                 reps: s.reps,
-                date: new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza', day: '2-digit', month: 'short' }),
+                date: formatFortalezaDate(new Date(), { day: '2-digit', month: 'short' }),
               };
             }
           } else if (s.weightKg > 0) {
@@ -528,7 +571,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
               exerciseName: ex.name,
               weightKg: s.weightKg,
               reps: s.reps,
-              date: new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza', day: '2-digit', month: 'short' }),
+              date: formatFortalezaDate(new Date(), { day: '2-digit', month: 'short' }),
             });
           }
         });
@@ -545,7 +588,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const durationMin = Math.max(1, Math.round(activeWorkout.elapsedSeconds / 60));
 
     const newLog: CompletedWorkoutLog = {
-      id: `log-${Date.now()}`,
+      id: newId(),
       routineId: activeWorkout.routineId,
       routineTitle: activeWorkout.routineTitle,
       date: todayFortaleza(),
@@ -579,11 +622,10 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     setWorkoutLogs(prev => [newLog, ...prev]);
-    setPersonalRecords(updatedPrs);
-
-    if (isDemo) {
-      setStudentProfile(prev => ({ ...prev, totalWorkoutsLogged: prev.totalWorkoutsLogged + 1, weeklyCompleted: prev.weeklyCompleted + 1, streakDays: prev.streakDays + 1 }));
+    if (!isDemo && isUuid(uid)) {
+      void pushLog(uid, newLog).then(ok => { if (!ok) writePending([...readPending(), newLog]); });
     }
+    setPersonalRecords(updatedPrs);
 
     try {
       confetti({
@@ -612,6 +654,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const newStudent: Student = {
       id: `student-${Date.now()}`,
       joinedDate: formatDateBR(todayFortaleza()),
+      routineExpiresOn: addDays(todayFortaleza(), 28),
       ...data,
     };
     setStudents(prev => [newStudent, ...prev]);

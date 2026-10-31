@@ -1,3 +1,4 @@
+import { ThemeToggle } from './ThemeToggle.tsx';
 import React, { useState } from 'react';
 import { useAuth, DEMO_ALLOWED } from '../context/AuthContext.tsx';
 import {
@@ -7,7 +8,6 @@ import {
   User,
   Eye,
   EyeOff,
-  Dumbbell,
   CheckCircle,
   AlertCircle,
   Sparkles,
@@ -105,6 +105,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
       <div className="bg-[#0f0f12] border border-white/10 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl relative">
+        <ThemeToggle className="absolute left-4 top-4" />
         {/* Close button */}
         <button
           type="button"
@@ -117,11 +118,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
         {/* Brand Header */}
         <div className="text-center space-y-1">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#00ff66] to-[#ffb690] text-[#09090b] flex items-center justify-center mx-auto shadow-lg shadow-[#00ff66]/20">
-            <Dumbbell className="w-6 h-6 stroke-[2.5]" />
-          </div>
+          <img src="/cesar-avatar.jpg" alt="Cesar, seu treinador" className="w-36 h-36 sm:w-40 sm:h-40 rounded-full object-cover object-[50%_30%] mx-auto border-4 border-[#00ff66]/70 shadow-xl" />
           <span className="text-[10px] font-bold text-[#00ff66] uppercase tracking-wider block">
-            PulseFit • #TeamCesar
+            Cesar Treinos • #TeamCesar
           </span>
           <h2 className="text-xl font-bold font-display text-white">
             {mode === 'login' && 'Acessar Minha Conta'}
@@ -305,7 +304,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               {loading ? (
                 <span>Autenticando...</span>
               ) : mode === 'login' ? (
-                <span>Entrar no PulseFit</span>
+                <span>Entrar no Cesar Treinos</span>
               ) : (
                 <span>Cadastrar Minha Conta</span>
               )}

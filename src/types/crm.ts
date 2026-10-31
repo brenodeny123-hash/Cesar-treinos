@@ -97,5 +97,7 @@ export interface Student {
   goal: string;
   weightKg: number;
   joinedDate: string;
+  /** Vencimento da ficha de treino (YYYY-MM-DD). */
+  routineExpiresOn?: string;
   notes?: string;
 }

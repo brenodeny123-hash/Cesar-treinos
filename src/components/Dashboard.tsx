@@ -1,4 +1,5 @@
 import React from 'react';
+import { todayFortaleza, weekStart, cycleWeek } from '../lib/time.ts';
 import { useWorkout } from '../context/WorkoutContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import {
@@ -43,15 +44,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const latestMeas = measurements[0] || { weightKg: 78.4 };
 
-  const daysOfWeek = [
-    { day: 'Seg', name: 'Peito & Tríceps', done: true },
-    { day: 'Ter', name: 'Descanso Ativo', done: true, rest: true },
-    { day: 'Qua', name: 'Costas & Bíceps', done: true },
-    { day: 'Qui', name: 'Descanso', done: true, rest: true },
-    { day: 'Sex', name: 'Pernas & Glúteo', done: true },
-    { day: 'Hoje', name: 'Peito & Tríceps', done: false, isToday: true },
-    { day: 'Dom', name: 'Recuperação', done: false, rest: true },
-  ];
+  const today = todayFortaleza();
+  const monday = weekStart(today);
+  // Data de início do treino: antes dela nada conta como treinado.
+  const startIso = /^\d{4}-\d{2}-\d{2}$/.test(studentProfile.joinedDate) ? studentProfile.joinedDate : '';
+  const cycle = cycleWeek(startIso || today, today);
+  const weekDays = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(`${monday}T12:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + index);
+    const iso = date.toISOString().slice(0, 10);
+    const names = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const routinesByDay = ['Recuperação', 'Treino A', 'Treino B', 'Treino C', 'Treino A', 'Treino B', 'Treino C'];
+    const beforeStart = !!startIso && iso < startIso;
+    const completed = !beforeStart && workoutLogs.some(log => log.date === iso);
+    return { date: iso, day: names[date.getUTCDay()], name: routinesByDay[date.getUTCDay()], done: completed, isToday: iso === today, rest: date.getUTCDay() === 0, beforeStart };
+  });
+
+
+  // Métricas reais da semana (somente treinos a partir do início do treino)
+  const weekLogs = workoutLogs.filter(l => l.date >= monday && l.date <= today && (!startIso || l.date >= startIso));
+  const weekVolume = weekLogs.reduce((acc, l) => acc + l.totalVolumeKg, 0);
+  const weeklyDone = new Set(weekLogs.map(l => l.date)).size;
+  const weeklyGoal = Math.max(1, studentProfile.weeklyGoal || 1);
+  const weeklyPct = Math.min(100, Math.round((weeklyDone / weeklyGoal) * 100));
+  const volumeLabel = weekVolume >= 1000 ? `${(weekVolume / 1000).toFixed(1).replace('.', ',')}k` : String(Math.round(weekVolume));
+  const hasMeasure = measurements.length > 0;
+  const oldestMeas = measurements[measurements.length - 1];
+  const weightDelta = hasMeasure && measurements.length > 1 ? Math.round((latestMeas.weightKg - oldestMeas.weightKg) * 10) / 10 : null;
 
   const displayName = user?.displayName || studentProfile.nickname;
 
@@ -87,11 +106,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
           )}
         </div>
 
+        <div className="on-photo mt-3 relative overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f12]">
+          <img src="/cesar-avatar.jpg" alt="Caricatura do Cesar, seu treinador" className="w-full h-64 sm:h-72 object-cover object-[50%_28%]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#00ff66]">#TeamCesar</span>
+            <p className="text-2xl font-bold font-display text-white leading-tight">Cesar Treinos</p>
+            <p className="text-xs text-white/80">Treine com foco. Evolua com consistência.</p>
+          </div>
+        </div>
         <h1 className="text-2xl font-bold font-display text-white mt-1">
           Olá, {displayName}! 💪
         </h1>
         <p className="text-xs text-[#a1a1aa]">
-          Foco total no gás hoje. Sua ficha atual está na <span className="text-[#00ff66] font-semibold">Semana 4 de 8</span> do ciclo de força.
+          Foco total no gás hoje. Acompanhe sua rotina e evolução, um treino de cada vez.
         </p>
       </div>
 
@@ -176,18 +204,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <CheckCircle2 className="w-4 h-4" />
             </span>
             <span className="text-[10px] font-semibold text-[#39ff14] bg-[#39ff14]/15 px-2 py-0.5 rounded-full">
-              4/5 metas
+              {weeklyDone}/{weeklyGoal} metas
             </span>
           </div>
           <div className="mt-3">
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold font-display text-white tabular-nums">80%</span>
+              <span className="text-2xl font-bold font-display text-white tabular-nums">{weeklyPct}%</span>
               <span className="text-xs text-[#a1a1aa]">meta</span>
             </div>
             <span className="text-xs text-[#a1a1aa] mt-0.5 block">Frequência Semanal</span>
           </div>
           <div className="w-full bg-[#121214] h-1.5 rounded-full mt-2.5 overflow-hidden">
-            <div className="bg-[#39ff14] h-full rounded-full" style={{ width: '80%' }} />
+            <div className="bg-[#39ff14] h-full rounded-full" style={{ width: `${weeklyPct}%` }} />
           </div>
         </div>
 
@@ -201,17 +229,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <Dumbbell className="w-4 h-4" />
             </span>
             <span className="text-[10px] font-semibold text-[#00ff66] bg-[#00ff66]/15 px-2 py-0.5 rounded-full">
-              +8.8%
+              {weekLogs.length} {weekLogs.length === 1 ? 'treino' : 'treinos'}
             </span>
           </div>
           <div className="mt-3">
             <span className="text-2xl font-bold font-display text-white tabular-nums block">
-              18.7k <span className="text-xs font-normal text-[#a1a1aa]">kg</span>
+              {volumeLabel} <span className="text-xs font-normal text-[#a1a1aa]">kg</span>
             </span>
             <span className="text-xs text-[#a1a1aa] mt-0.5 block">Volume Semanal</span>
           </div>
           <div className="w-full bg-[#121214] h-1.5 rounded-full mt-2.5 overflow-hidden">
-            <div className="bg-[#00ff66] h-full rounded-full" style={{ width: '92%' }} />
+            <div className="bg-[#00ff66] h-full rounded-full" style={{ width: `${weeklyPct}%` }} />
           </div>
         </div>
 
@@ -224,9 +252,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span className="p-2 rounded-xl bg-[#121214] text-[#5be7ff]">
               <Scale className="w-4 h-4" />
             </span>
-            <span className="text-[10px] font-semibold text-[#5be7ff] bg-[#5be7ff]/15 px-2 py-0.5 rounded-full">
-              -3.7 kg
-            </span>
+            {weightDelta !== null && (
+              <span className="text-[10px] font-semibold text-[#5be7ff] bg-[#5be7ff]/15 px-2 py-0.5 rounded-full">
+                {weightDelta > 0 ? '+' : ''}{String(weightDelta).replace('.', ',')} kg
+              </span>
+            )}
           </div>
           <div className="mt-3">
             <span className="text-2xl font-bold font-display text-white tabular-nums block">
@@ -234,7 +264,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </span>
             <span className="text-xs text-[#a1a1aa] mt-0.5 block">Peso Atual</span>
           </div>
-          <span className="text-[11px] text-[#39ff14] mt-2 block">Meta: 77.0 kg</span>
+          <span className="text-[11px] text-[#39ff14] mt-2 block">{hasMeasure ? 'Última medição' : 'Registre seu peso em Medidas'}</span>
         </div>
 
         {/* Metric 4: Streak */}
@@ -309,11 +339,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <Calendar className="w-4 h-4 text-[#00ff66]" />
             <h3 className="text-sm font-bold font-display text-white">Cronograma da Semana</h3>
           </div>
-          <span className="text-[11px] text-[#39ff14] font-semibold">Semana 43</span>
+          <span className="text-[11px] text-[#39ff14] font-bold bg-[#39ff14]/10 px-2 py-1 rounded-lg">Semana {cycle.week}/{cycle.total}</span>
         </div>
 
         <div className="grid grid-cols-7 gap-1.5 text-center">
-          {daysOfWeek.map((d, idx) => (
+          {weekDays.map((d, idx) => (
             <div
               key={idx}
               className={`p-2 rounded-xl border flex flex-col items-center justify-between min-h-[58px] ${
@@ -321,6 +351,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   ? 'bg-[#121214] border-[#00ff66] ring-1 ring-[#00ff66]/50'
                   : d.done
                   ? 'bg-[#172617]/70 border-[#39ff14]/30'
+                  : d.beforeStart
+                  ? 'bg-[#09090b]/30 border-white/5 opacity-40'
                   : 'bg-[#09090b]/50 border-white/5 opacity-60'
               }`}
             >
@@ -337,7 +369,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 )}
               </div>
               <span className="text-[9px] text-[#a1a1aa] truncate max-w-[36px]">
-                {d.rest ? 'Desc.' : 'Treino'}
+                {d.done ? 'Feito' : d.beforeStart ? '—' : d.rest ? 'Desc.' : 'Treino'}
               </span>
             </div>
           ))}
@@ -354,7 +386,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             Recado do Treinador Cesar
           </span>
           <p className="text-xs text-[#e8ffef] mt-0.5 italic leading-relaxed">
-            "Excelente evolução de carga no Supino essa semana, Lucas! Mantenha a cadência de descida em 2 segundos para máxima hipertrofia miofibrilar."
+            "Bem-vindo ao seu ciclo de treino, {displayName}! Foque na execução e anote as cargas de cada série. Qualquer dúvida, fale comigo."
           </p>
         </div>
       </div>

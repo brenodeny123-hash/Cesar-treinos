@@ -241,7 +241,7 @@ const logAuthFailure = (action: AuthAction, error: unknown): void => {
   const safeName =
     details.name && /^[a-z0-9_$.-]{1,80}$/i.test(details.name) ? details.name : 'unknown';
 
-  console.warn('[PulseFit auth] request failed', {
+  console.warn('[Cesar Treinos auth] request failed', {
     action,
     category: classifyAuthError(error),
     code: safeCode,
@@ -268,7 +268,7 @@ const mapAuthenticatedUser = async (authUser: User): Promise<AppUser> => {
   return {
     uid: authUser.id,
     email: authUser.email ?? '',
-    displayName: profile.full_name || authUser.user_metadata.full_name || authUser.email?.split('@')[0] || 'Aluno PulseFit',
+    displayName: profile.full_name || authUser.user_metadata.full_name || authUser.email?.split('@')[0] || 'Aluno Cesar Treinos',
     photoURL: profile.avatar_url || undefined,
     role,
   };

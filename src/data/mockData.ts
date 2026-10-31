@@ -1,4 +1,7 @@
-import { WorkoutRoutine, CompletedWorkoutLog, BodyMeasurement, PersonalRecord, StudentProfile, Student } from '../types/crm.ts';
+import { todayFortaleza, formatDateBR, addDays } from '../lib/time.ts';
+import type { WorkoutRoutine, CompletedWorkoutLog, BodyMeasurement, PersonalRecord, StudentProfile, Student } from '../types/crm.ts';
+
+const DEMO_START = todayFortaleza();
 
 export const INITIAL_STUDENTS: Student[] = [
   {
@@ -13,68 +16,9 @@ export const INITIAL_STUDENTS: Student[] = [
     currentRoutineTitle: 'Peito, Deltoide & Tríceps',
     goal: 'Hipertrofia com Definição',
     weightKg: 78.4,
-    joinedDate: '15/08/2026',
-    notes: 'Boa aderência à dieta. Foco na progressão do supino e agachamento.',
-  },
-  {
-    id: 'student-2',
-    name: 'Mariana Costa',
-    email: 'mariana.costa@gmail.com',
-    phone: '(11) 99123-5566',
-    plan: 'Semestral',
-    monthlyFee: 190,
-    status: 'Ativo',
-    currentRoutineCode: 'B',
-    currentRoutineTitle: 'Costas, Dorsal & Bíceps',
-    goal: 'Emagrecimento & Fortalecimento de Glúteo',
-    weightKg: 62.1,
-    joinedDate: '01/09/2026',
-    notes: 'Restrição leve no joelho esquerdo para agachamentos profundos.',
-  },
-  {
-    id: 'student-3',
-    name: 'Roberto Lima',
-    email: 'roberto.lima@uol.com.br',
-    phone: '(11) 97788-9900',
-    plan: 'Mensal',
-    monthlyFee: 250,
-    status: 'Avaliação',
-    currentRoutineCode: 'C',
-    currentRoutineTitle: 'Pernas & Quadríceps',
-    goal: 'Condicionamento Cardiovascular e Longevidade',
-    weightKg: 84.5,
-    joinedDate: '10/10/2026',
-    notes: 'Agendada reavaliação de bioimpedância para amanhã às 11:00.',
-  },
-  {
-    id: 'student-4',
-    name: 'Rodrigo Alves',
-    email: 'rodrigo.alves@hotmail.com',
-    phone: '(11) 98844-3322',
-    plan: 'Trimestral VIP',
-    monthlyFee: 220,
-    status: 'Pendente',
-    currentRoutineCode: 'A',
-    currentRoutineTitle: 'Peito, Deltoide & Tríceps',
-    goal: 'Ganho de Força Bruta',
-    weightKg: 89.0,
-    joinedDate: '20/07/2026',
-    notes: 'Ficha vence amanhã! Necessita novo ciclo de periodização.',
-  },
-  {
-    id: 'student-5',
-    name: 'Paula Fernandes',
-    email: 'paula.fernandes@outlook.com',
-    phone: '(11) 96543-2198',
-    plan: 'Trimestral VIP',
-    monthlyFee: 220,
-    status: 'Ativo',
-    currentRoutineCode: 'D',
-    currentRoutineTitle: 'Ombros, Trapézio & Abdômen',
-    goal: 'Definição Abdominal e Postura',
-    weightKg: 58.0,
-    joinedDate: '05/09/2026',
-    notes: 'Mensalidade renovada via PIX hoje.',
+    joinedDate: formatDateBR(DEMO_START),
+    routineExpiresOn: addDays(DEMO_START, 28),
+    notes: '',
   },
 ];
 
@@ -84,11 +28,12 @@ export const INITIAL_STUDENT_PROFILE: StudentProfile = {
   goal: 'Hipertrofia com Definição',
   plan: 'Trimestral VIP • #TeamCesar',
   trainerName: 'Prof. Cesar Treinos',
-  streakDays: 14,
+  streakDays: 0,
   weeklyGoal: 5,
-  weeklyCompleted: 4,
-  totalWorkoutsLogged: 38,
-  joinedDate: 'Agosto 2026',
+  weeklyCompleted: 0,
+  totalWorkoutsLogged: 0,
+  // Data de início do treino (ISO): dias, semanas e frequência contam a partir dela.
+  joinedDate: DEMO_START,
 };
 
 export const INITIAL_ROUTINES: WorkoutRoutine[] = [
@@ -402,294 +347,11 @@ export const INITIAL_ROUTINES: WorkoutRoutine[] = [
   },
 ];
 
-export const INITIAL_WORKOUT_LOGS: CompletedWorkoutLog[] = [
-  {
-    id: 'log-1',
-    routineId: 'routine-a',
-    routineTitle: 'Treino A • Peito & Tríceps',
-    date: '2026-10-26',
-    durationMinutes: 52,
-    totalVolumeKg: 4320,
-    completedSetsCount: 19,
-    exercises: [
-      {
-        name: 'Supino Reto com Barra',
-        muscleGroup: 'Peito',
-        maxWeightKg: 85,
-        sets: [
-          { weightKg: 70, reps: 12 },
-          { weightKg: 80, reps: 10 },
-          { weightKg: 80, reps: 8 },
-          { weightKg: 85, reps: 8 },
-        ],
-      },
-      {
-        name: 'Supino Inclinado com Halteres',
-        muscleGroup: 'Peito',
-        maxWeightKg: 30,
-        sets: [
-          { weightKg: 24, reps: 12 },
-          { weightKg: 28, reps: 10 },
-          { weightKg: 28, reps: 10 },
-          { weightKg: 30, reps: 8 },
-        ],
-      },
-      {
-        name: 'Tríceps Corda',
-        muscleGroup: 'Tríceps',
-        maxWeightKg: 40,
-        sets: [
-          { weightKg: 30, reps: 12 },
-          { weightKg: 35, reps: 10 },
-          { weightKg: 40, reps: 8 },
-        ],
-      },
-    ],
-    prsAchieved: ['Supino Reto: 85kg (Novo Recorde!)'],
-    notes: 'Ótima cadência nas últimas séries do Supino. Força em alta!',
-  },
-  {
-    id: 'log-2',
-    routineId: 'routine-b',
-    routineTitle: 'Treino B • Costas & Bíceps',
-    date: '2026-10-24',
-    durationMinutes: 48,
-    totalVolumeKg: 4860,
-    completedSetsCount: 18,
-    exercises: [
-      {
-        name: 'Puxada Alta Pronada',
-        muscleGroup: 'Costas',
-        maxWeightKg: 70,
-        sets: [
-          { weightKg: 55, reps: 12 },
-          { weightKg: 65, reps: 10 },
-          { weightKg: 70, reps: 8 },
-        ],
-      },
-      {
-        name: 'Remada Curvada com Barra',
-        muscleGroup: 'Costas',
-        maxWeightKg: 75,
-        sets: [
-          { weightKg: 60, reps: 10 },
-          { weightKg: 70, reps: 8 },
-          { weightKg: 75, reps: 7 },
-        ],
-      },
-    ],
-    prsAchieved: ['Remada Curvada: 75kg (+5kg)'],
-    notes: 'Puxada bem controlada. Bíceps bem fadigado no final.',
-  },
-  {
-    id: 'log-3',
-    routineId: 'routine-c',
-    routineTitle: 'Treino C • Pernas & Quadríceps',
-    date: '2026-10-22',
-    durationMinutes: 58,
-    totalVolumeKg: 6420,
-    completedSetsCount: 16,
-    exercises: [
-      {
-        name: 'Agachamento Livre com Barra',
-        muscleGroup: 'Pernas',
-        maxWeightKg: 110,
-        sets: [
-          { weightKg: 80, reps: 10 },
-          { weightKg: 95, reps: 8 },
-          { weightKg: 105, reps: 8 },
-          { weightKg: 110, reps: 6 },
-        ],
-      },
-      {
-        name: 'Leg Press 45°',
-        muscleGroup: 'Pernas',
-        maxWeightKg: 260,
-        sets: [
-          { weightKg: 180, reps: 12 },
-          { weightKg: 220, reps: 10 },
-          { weightKg: 240, reps: 10 },
-          { weightKg: 260, reps: 8 },
-        ],
-      },
-    ],
-    prsAchieved: ['Leg Press 45°: 260kg'],
-    notes: 'Treino pesado de pernas, descansos de 2 minutos respeitados.',
-  },
-  {
-    id: 'log-4',
-    routineId: 'routine-d',
-    routineTitle: 'Treino D • Ombros & Core',
-    date: '2026-10-20',
-    durationMinutes: 44,
-    totalVolumeKg: 3120,
-    completedSetsCount: 15,
-    exercises: [
-      {
-        name: 'Desenvolvimento Militar',
-        muscleGroup: 'Ombros',
-        maxWeightKg: 26,
-        sets: [
-          { weightKg: 20, reps: 10 },
-          { weightKg: 24, reps: 8 },
-          { weightKg: 26, reps: 6 },
-        ],
-      },
-    ],
-    prsAchieved: [],
-    notes: 'Sessão rápida e intensa de deltoides.',
-  },
-  // Week -1 logs
-  {
-    id: 'log-5',
-    routineId: 'routine-a',
-    routineTitle: 'Treino A • Peito & Tríceps',
-    date: '2026-10-18',
-    durationMinutes: 50,
-    totalVolumeKg: 4100,
-    completedSetsCount: 18,
-    exercises: [
-      {
-        name: 'Supino Reto com Barra',
-        muscleGroup: 'Peito',
-        maxWeightKg: 80,
-        sets: [
-          { weightKg: 70, reps: 10 },
-          { weightKg: 80, reps: 8 },
-        ],
-      },
-    ],
-    prsAchieved: [],
-  },
-  {
-    id: 'log-6',
-    routineId: 'routine-b',
-    routineTitle: 'Treino B • Costas & Bíceps',
-    date: '2026-10-16',
-    durationMinutes: 47,
-    totalVolumeKg: 4500,
-    completedSetsCount: 17,
-    exercises: [
-      {
-        name: 'Puxada Alta Pronada',
-        muscleGroup: 'Costas',
-        maxWeightKg: 65,
-        sets: [{ weightKg: 65, reps: 10 }],
-      },
-    ],
-    prsAchieved: [],
-  },
-  {
-    id: 'log-7',
-    routineId: 'routine-c',
-    routineTitle: 'Treino C • Pernas & Quadríceps',
-    date: '2026-10-14',
-    durationMinutes: 56,
-    totalVolumeKg: 5900,
-    completedSetsCount: 16,
-    exercises: [
-      {
-        name: 'Agachamento Livre com Barra',
-        muscleGroup: 'Pernas',
-        maxWeightKg: 100,
-        sets: [{ weightKg: 100, reps: 8 }],
-      },
-    ],
-    prsAchieved: [],
-  },
-  // Week -2 logs
-  {
-    id: 'log-8',
-    routineId: 'routine-a',
-    routineTitle: 'Treino A • Peito & Tríceps',
-    date: '2026-10-11',
-    durationMinutes: 51,
-    totalVolumeKg: 3950,
-    completedSetsCount: 18,
-    exercises: [
-      {
-        name: 'Supino Reto com Barra',
-        muscleGroup: 'Peito',
-        maxWeightKg: 77,
-        sets: [{ weightKg: 75, reps: 8 }],
-      },
-    ],
-    prsAchieved: [],
-  },
-  {
-    id: 'log-9',
-    routineId: 'routine-c',
-    routineTitle: 'Treino C • Pernas & Quadríceps',
-    date: '2026-10-07',
-    durationMinutes: 54,
-    totalVolumeKg: 5400,
-    completedSetsCount: 15,
-    exercises: [
-      {
-        name: 'Agachamento Livre com Barra',
-        muscleGroup: 'Pernas',
-        maxWeightKg: 95,
-        sets: [{ weightKg: 95, reps: 8 }],
-      },
-    ],
-    prsAchieved: [],
-  },
-];
+export const INITIAL_WORKOUT_LOGS: CompletedWorkoutLog[] = [];
 
-export const INITIAL_MEASUREMENTS: BodyMeasurement[] = [
-  {
-    id: 'meas-1',
-    date: '2026-10-25',
-    weightKg: 78.4,
-    bodyFatPct: 13.8,
-    chestCm: 106,
-    waistCm: 81.5,
-    armsCm: 39.2,
-    thighsCm: 61.0,
-    notes: 'Definição abdominal mais visível. Menos retenção.',
-  },
-  {
-    id: 'meas-2',
-    date: '2026-10-10',
-    weightKg: 79.2,
-    bodyFatPct: 14.5,
-    chestCm: 105.5,
-    waistCm: 82.8,
-    armsCm: 38.8,
-    thighsCm: 60.5,
-    notes: 'Boa recuperação muscular.',
-  },
-  {
-    id: 'meas-3',
-    date: '2026-09-25',
-    weightKg: 80.6,
-    bodyFatPct: 15.6,
-    chestCm: 104.5,
-    waistCm: 84.5,
-    armsCm: 38.2,
-    thighsCm: 59.8,
-    notes: 'Início da nova periodização com o Cesar.',
-  },
-  {
-    id: 'meas-4',
-    date: '2026-09-01',
-    weightKg: 82.1,
-    bodyFatPct: 17.2,
-    chestCm: 103.0,
-    waistCm: 86.5,
-    armsCm: 37.5,
-    thighsCm: 59.0,
-    notes: 'Avaliação inicial com Bioimpedância.',
-  },
-];
+export const INITIAL_MEASUREMENTS: BodyMeasurement[] = [];
 
-export const INITIAL_PRS: PersonalRecord[] = [
-  { exerciseName: 'Supino Reto com Barra', weightKg: 85, reps: 8, date: '26 Out 2026' },
-  { exerciseName: 'Agachamento Livre', weightKg: 110, reps: 6, date: '22 Out 2026' },
-  { exerciseName: 'Leg Press 45°', weightKg: 260, reps: 8, date: '22 Out 2026' },
-  { exerciseName: 'Remada Curvada', weightKg: 75, reps: 7, date: '24 Out 2026' },
-  { exerciseName: 'Desenvolvimento Militar', weightKg: 26, reps: 6, date: '20 Out 2026' },
-];
+export const INITIAL_PRS: PersonalRecord[] = [];
 
 export const EXERCISE_LIBRARY = [
   { name: 'Supino Reto com Barra', muscleGroup: 'Peito', defaultRestSec: 90 },

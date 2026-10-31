@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "node -e \"import('node:fs').then(({ rmSync }) => ['dist', 'server.js'].forEach(path => rmSync(path, { recursive: true, force: true })))\"",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

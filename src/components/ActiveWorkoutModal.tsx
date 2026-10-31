@@ -1,4 +1,9 @@
-import React, { useState } from 'react';
+import { ExerciseReference } from './ExerciseReference.tsx';
+import { ExerciseGuide } from './ExerciseGuide.tsx';
+import React, { useEffect, useRef, useState } from 'react';
+import { useAuth } from '../context/AuthContext.tsx';
+import { useWorkoutTimer } from '../hooks/useWorkoutTimer.ts';
+import { SetTimerPanel } from './SetTimerPanel.tsx';
 import { useWorkout } from '../context/WorkoutContext.tsx';
 import {
   Check,
@@ -33,16 +38,114 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
     finishActiveWorkout,
     cancelActiveWorkout,
     startRestTimer,
+    stopRestTimer,
+    restTimer,
   } = useWorkout();
 
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+  const { user } = useAuth();
+  const [autoNext, setAutoNext] = useState(true);
+  const latest = useRef({ activeWorkout, toggleSetCompleted, setCurrentExerciseIndex, autoNext });
+  latest.current = { activeWorkout, toggleSetCompleted, setCurrentExerciseIndex, autoNext };
+
+  const timer = useWorkoutTimer(`pulsefit:${user?.uid ?? 'anon'}:timer`, {
+    onCompleteSet: key => {
+      const [exerciseId, setId] = key.split('|');
+      latest.current.toggleSetCompleted(exerciseId, setId, { skipRest: true, onlyComplete: true });
+    },
+    onRestDone: (_key, completedKeys) => {
+      const { activeWorkout: w, setCurrentExerciseIndex: goTo, autoNext: auto } = latest.current;
+      if (!w) return;
+      for (let i = 0; i < w.exercises.length; i++) {
+        const idx = (w.currentExerciseIndex + i) % w.exercises.length;
+        const ex = w.exercises[idx];
+        const next = ex.sets.find(s => !s.completed && !completedKeys.includes(`${ex.id}|${s.id}`));
+        if (next) {
+          goTo(idx);
+          if (auto) timer.dispatch({ type: 'start', setKey: `${ex.id}|${next.id}` });
+          return;
+        }
+      }
+    },
+  });
+
+  // Cada treino tem sua sessão: ao iniciar/encerrar, o cronômetro zera as séries registradas
+  useEffect(() => {
+    timer.dispatch({ type: 'begin_session', sessionId: activeWorkout ? activeWorkout.startTime : null });
+  }, [activeWorkout?.startTime]);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
   const [completedSummary, setCompletedSummary] = useState<{
     duration: number;
     volume: number;
     sets: number;
     prs: string[];
   } | null>(null);
+
+  // A tela de resumo precisa existir mesmo depois que o treino ativo é encerrado.
+  if (completedSummary) {
+    return (
+<div className="fixed inset-0 z-70 bg-[#09090b] flex items-center justify-center p-4">
+          <div className="bg-[#0f0f12] border border-[#00ff66]/30 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl text-center">
+            <div className="w-16 h-16 rounded-full bg-[#39ff14]/20 border border-[#39ff14]/40 text-[#39ff14] flex items-center justify-center mx-auto shadow-lg shadow-[#39ff14]/10">
+              <Check className="w-8 h-8 stroke-[3]" />
+            </div>
+
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#39ff14]">Treino Concluído!</span>
+              <h2 className="text-2xl font-bold font-display text-white mt-1">Mandou Muito Bem! 🔥</h2>
+              <p className="text-xs text-[#a1a1aa] mt-1">
+                Seu esforço e consistência foram registrados no seu histórico do #TeamCesar.
+              </p>
+            </div>
+
+            {/* Performance Bento */}
+            <div className="grid grid-cols-3 gap-2 text-left">
+              <div className="bg-[#121214] p-3 rounded-xl border border-white/5">
+                <span className="text-[10px] text-[#a1a1aa] uppercase">Tempo</span>
+                <span className="text-lg font-bold font-display text-white block mt-0.5">
+                  {completedSummary.duration} min
+                </span>
+              </div>
+              <div className="bg-[#121214] p-3 rounded-xl border border-white/5">
+                <span className="text-[10px] text-[#a1a1aa] uppercase">Volume Total</span>
+                <span className="text-lg font-bold font-display text-[#00ff66] block mt-0.5">
+                  {completedSummary.volume.toLocaleString('pt-BR')} kg
+                </span>
+              </div>
+              <div className="bg-[#121214] p-3 rounded-xl border border-white/5">
+                <span className="text-[10px] text-[#a1a1aa] uppercase">Séries Feitas</span>
+                <span className="text-lg font-bold font-display text-[#5be7ff] block mt-0.5">
+                  {completedSummary.sets}
+                </span>
+              </div>
+            </div>
+
+            {/* PRs achieved if any */}
+            {completedSummary.prs.length > 0 && (
+              <div className="bg-[#1c1c21] p-3.5 rounded-2xl border border-[#7dff5c]/30 text-left space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#7dff5c]">
+                  <Award className="w-4 h-4" /> Novo Recorde Pessoal Batido!
+                </div>
+                {completedSummary.prs.map((pr, idx) => (
+                  <p key={idx} className="text-xs text-white">
+                    🎯 {pr}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => { setCompletedSummary(null); onClose(); }}
+              className="w-full py-3.5 rounded-xl bg-[#00ff66] hover:bg-[#00cc52] text-[#04130a] text-sm font-bold font-display shadow-lg active:scale-95 transition-all"
+            >
+              Ver Meu Progresso Semanal
+            </button>
+          </div>
+        </div>
+    );
+  }
 
   if (!isOpen || !activeWorkout) return null;
 
@@ -60,16 +163,48 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
   const secs = activeWorkout.elapsedSeconds % 60;
   const elapsedFormatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
+  const startSet = currentExercise?.sets.find(x => !x.completed && !timer.state.completedKeys.includes(`${currentExercise.id}|${x.id}`));
+  const startKey = currentExercise && startSet ? `${currentExercise.id}|${startSet.id}` : null;
+  const shownKey = timer.state.setKey ?? startKey;
+  const timerLabel = (() => {
+    if (!shownKey) return 'Cronômetro da série';
+    const [eid, sid] = shownKey.split('|');
+    const ex = activeWorkout.exercises.find(e => e.id === eid);
+    const st = ex?.sets.find(x => x.id === sid);
+    return ex && st ? `Série ${st.setNumber} de ${ex.sets.length}` : 'Cronômetro da série';
+  })();
+
+  // Marcar à mão convive com o cronômetro: nunca cria um segundo relógio nem duplica a série
+  function handleManualToggle(exerciseId: string, setId: string) {
+    const ex = activeWorkout?.exercises.find(e => e.id === exerciseId);
+    const st = ex?.sets.find(x => x.id === setId);
+    if (!ex || !st) return;
+    const key = `${exerciseId}|${setId}`;
+    if (st.completed) {
+      toggleSetCompleted(exerciseId, setId, { skipRest: true });
+      timer.dispatch({ type: 'forget_set', setKey: key });
+      return;
+    }
+    if (timer.state.phase === 'executing' && timer.state.setKey === key) { timer.dispatch({ type: 'finish_execution' }); return; }
+    toggleSetCompleted(exerciseId, setId, { skipRest: true });
+    if (timer.state.phase === 'idle') timer.dispatch({ type: 'start_rest', setKey: key });
+  }
+
   const handleFinish = () => {
-    const result = finishActiveWorkout();
-    if (result) {
+    setFinishError(null);
+    try {
+      const result = finishActiveWorkout();
+      if (!result) { setFinishError('Não foi possível finalizar: nenhum treino ativo.'); return; }
+      setShowFinishConfirm(false);
       setCompletedSummary({
         duration: result.durationMinutes,
         volume: result.totalVolumeKg,
         sets: result.completedSetsCount,
         prs: result.prsAchieved,
       });
-      setShowFinishConfirm(false);
+    } catch (err) {
+      console.error('Falha ao finalizar treino', err);
+      setFinishError('Algo deu errado ao salvar. Seu treino continua aberto; tente novamente.');
     }
   };
 
@@ -207,6 +342,8 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
                 </div>
               </div>
 
+              <ExerciseReference name={currentExercise.name} />
+              <ExerciseGuide name={currentExercise.name} muscleGroup={currentExercise.muscleGroup} />
               {/* Memory of Last Session & Coach Notes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 {currentExercise.lastWeightKg !== undefined && (
@@ -231,17 +368,19 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
               </div>
             </div>
 
+            <SetTimerPanel timer={timer} startKey={startKey} label={timerLabel} autoNext={autoNext} onAutoNext={setAutoNext} />
+
             {/* Quick Timer Triggers */}
             <div className="flex items-center justify-between gap-2 px-1 text-xs">
               <span className="text-[#a1a1aa] font-medium flex items-center gap-1">
-                <Timer className="w-3.5 h-3.5 text-[#00ff66]" /> Iniciar Descanso:
+                <Timer className="w-3.5 h-3.5 text-[#00ff66]" /> Descanso padrão:
               </span>
               <div className="flex gap-1.5">
                 {[45, 60, 90, 120].map(sec => (
                   <button
                     key={sec}
                     type="button"
-                    onClick={() => startRestTimer(sec, currentExercise.name)}
+                    onClick={() => timer.dispatch({ type: 'set_rest_sec', seconds: sec })}
                     className="px-2.5 py-1 rounded-lg bg-[#121214] hover:bg-[#1c1c21] text-[#e8ffef] font-mono text-xs border border-white/5 active:scale-95 transition-all"
                   >
                     {sec}s
@@ -379,7 +518,7 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
                       <div className="w-16 flex items-center justify-end shrink-0">
                         <button
                           type="button"
-                          onClick={() => toggleSetCompleted(currentExercise.id, set.id)}
+                          onClick={() => handleManualToggle(currentExercise.id, set.id)}
                           className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-md ${
                             set.completed
                               ? 'bg-[#39ff14] text-[#09090b] ring-2 ring-[#39ff14]/50 shadow-[#39ff14]/20'
@@ -423,6 +562,10 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
                 <span className="font-semibold text-white">{totalSets}</span> séries planejadas. Deseja registrar no seu histórico?
               </p>
             </div>
+            {completedSets === 0 && (
+              <p className="text-xs text-[#ffb4ab] text-center">Marque ao menos uma série como feita para salvar este treino no histórico.</p>
+            )}
+            {finishError && <p role="alert" className="text-xs text-[#ffb4ab] text-center">{finishError}</p>}
             <div className="flex gap-2 pt-2">
               <button
                 type="button"
@@ -434,7 +577,8 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
               <button
                 type="button"
                 onClick={handleFinish}
-                className="flex-1 py-2.5 rounded-xl bg-[#00ff66] hover:bg-[#00cc52] text-[#04130a] text-xs font-bold font-display shadow-lg active:scale-95"
+                disabled={completedSets === 0}
+                className="flex-1 py-2.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed bg-[#00ff66] hover:bg-[#00cc52] text-[#04130a] text-xs font-bold font-display shadow-lg active:scale-95"
               >
                 Confirmar & Salvar
               </button>
@@ -477,68 +621,6 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
         </div>
       )}
 
-      {/* Workout Completed Celebration Summary Screen */}
-      {completedSummary && (
-        <div className="fixed inset-0 z-70 bg-[#09090b] flex items-center justify-center p-4">
-          <div className="bg-[#0f0f12] border border-[#00ff66]/30 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl text-center">
-            <div className="w-16 h-16 rounded-full bg-[#39ff14]/20 border border-[#39ff14]/40 text-[#39ff14] flex items-center justify-center mx-auto shadow-lg shadow-[#39ff14]/10">
-              <Check className="w-8 h-8 stroke-[3]" />
-            </div>
-
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#39ff14]">Treino Concluído!</span>
-              <h2 className="text-2xl font-bold font-display text-white mt-1">Mandou Muito Bem! 🔥</h2>
-              <p className="text-xs text-[#a1a1aa] mt-1">
-                Seu esforço e consistência foram registrados no seu histórico do #TeamCesar.
-              </p>
-            </div>
-
-            {/* Performance Bento */}
-            <div className="grid grid-cols-3 gap-2 text-left">
-              <div className="bg-[#121214] p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] text-[#a1a1aa] uppercase">Tempo</span>
-                <span className="text-lg font-bold font-display text-white block mt-0.5">
-                  {completedSummary.duration} min
-                </span>
-              </div>
-              <div className="bg-[#121214] p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] text-[#a1a1aa] uppercase">Volume Total</span>
-                <span className="text-lg font-bold font-display text-[#00ff66] block mt-0.5">
-                  {completedSummary.volume.toLocaleString('pt-BR')} kg
-                </span>
-              </div>
-              <div className="bg-[#121214] p-3 rounded-xl border border-white/5">
-                <span className="text-[10px] text-[#a1a1aa] uppercase">Séries Feitas</span>
-                <span className="text-lg font-bold font-display text-[#5be7ff] block mt-0.5">
-                  {completedSummary.sets}
-                </span>
-              </div>
-            </div>
-
-            {/* PRs achieved if any */}
-            {completedSummary.prs.length > 0 && (
-              <div className="bg-[#1c1c21] p-3.5 rounded-2xl border border-[#7dff5c]/30 text-left space-y-1.5">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#7dff5c]">
-                  <Award className="w-4 h-4" /> Novo Recorde Pessoal Batido!
-                </div>
-                {completedSummary.prs.map((pr, idx) => (
-                  <p key={idx} className="text-xs text-white">
-                    🎯 {pr}
-                  </p>
-                ))}
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={handleDismissSummary}
-              className="w-full py-3.5 rounded-xl bg-[#00ff66] hover:bg-[#00cc52] text-[#04130a] text-sm font-bold font-display shadow-lg active:scale-95 transition-all"
-            >
-              Ver Meu Progresso Semanal
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

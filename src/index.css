@@ -8,8 +8,8 @@
 
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: #09090b;
-  color: #e8ffef;
+  background-color: var(--page-bg, #09090b);
+  color: var(--page-fg, #e8ffef);
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -34,3 +34,85 @@ h1, h2, h3, h4, .font-display {
 :root { --neon: #00ff66; --neon-2: #39ff14; }
 .neon-glow { box-shadow: 0 0 0 1px rgba(0,255,102,.35), 0 0 24px rgba(0,255,102,.18); }
 :focus-visible { outline: 2px solid var(--neon); outline-offset: 2px; }
+
+
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* Calendário: caricatura do Cesar como papel de parede, sem brilhos animados */
+.calendar-wallpaper { opacity: .55; filter: saturate(.9); }
+.calendar-veil { background: linear-gradient(180deg, rgba(9,9,11,.55), rgba(9,9,11,.82)); }
+
+/* ===== Tema claro =====
+   O app usa uma paleta pequena em classes arbitrárias do Tailwind; no tema claro
+   cada token escuro é remapeado aqui (seletor por token exato: não afeta hover:/focus:). */
+html.light { --page-bg: #f3f6f3; --page-fg: #0f1a13; }
+html.light body { background-color: #f3f6f3; color: #0f1a13; }
+
+/* superfícies */
+html.light [class~="bg-[#09090b]"] { background-color: #f3f6f3; }
+html.light [class~="bg-[#0f0f12]"], html.light [class~="bg-[#101014]"], html.light [class~="bg-[#121214]"] { background-color: #ffffff; }
+html.light [class~="bg-[#1c1c21]"], html.light [class~="bg-[#2a2a30]"], html.light [class~="bg-[#2d3449]"] { background-color: #e9eee9; }
+html.light [class~="bg-[#172617]"], html.light [class~="bg-[#12231b]"] { background-color: #e6f6ea; }
+html.light [class~="bg-[#09090b]/95"], html.light [class~="bg-[#09090b]/90"] { background-color: rgb(243 246 243 / .92); }
+html.light [class~="bg-[#09090b]/50"], html.light [class~="bg-[#09090b]/30"] { background-color: rgb(233 238 233 / .7); }
+html.light [class~="bg-[#172617]/70"], html.light [class~="bg-[#172617]/95"], html.light [class~="bg-[#12231b]/80"] { background-color: #e6f6ea; }
+html.light [class~="hover:bg-[#121214]"]:hover, html.light [class~="hover:bg-[#1c1c21]"]:hover { background-color: #eef2ee; }
+html.light [class~="hover:bg-white/5"]:hover { background-color: rgb(0 0 0 / .05); }
+html.light [class~="bg-black/80"], html.light [class~="bg-black/70"], html.light [class~="bg-black/75"] { background-color: rgb(15 26 19 / .5); }
+html.light [class~="bg-white/5"], html.light [class~="bg-white/10"] { background-color: rgb(0 0 0 / .05); }
+
+/* gradientes (cada parada separada) */
+html.light [class~="from-[#121214]"], html.light [class~="from-[#0f0f12]"] { --tw-gradient-from: #ffffff; }
+html.light [class~="via-[#121214]"] { --tw-gradient-via: #ffffff; }
+html.light [class~="via-[#1c1c21]"] { --tw-gradient-via: #eef2ee; }
+html.light [class~="to-[#121214]"], html.light [class~="to-[#0f0f12]"] { --tw-gradient-to: #ffffff; }
+
+/* bordas */
+html.light [class~="border-white/5"], html.light [class~="border-white/10"], html.light [class~="border-white/15"], html.light [class~="border-white/20"], html.light [class~="divide-white/5"] { border-color: rgb(15 26 19 / .12); }
+html.light [class~="border-[#121214]"], html.light [class~="border-[#1c1c21]"] { border-color: rgb(15 26 19 / .12); }
+
+/* textos */
+html.light [class~="text-white"], html.light [class~="text-[#e8ffef]"], html.light [class~="hover:text-white"]:hover { color: #0f1a13; }
+html.light [class~="text-[#a1a1aa]"] { color: #52605a; }
+html.light [class~="text-[#71717a]"] { color: #6b7770; }
+html.light [class~="text-[#00ff66]"], html.light [class~="text-[#00cc52]"] { color: #077a33; }
+html.light [class~="text-[#39ff14]"], html.light [class~="text-[#7dff5c]"] { color: #2a7d12; }
+html.light [class~="text-[#5be7ff]"] { color: #0a6f94; }
+html.light [class~="text-[#3ECF8E]"] { color: #107a52; }
+html.light [class~="text-[#ffb4ab]"] { color: #b3261e; }
+html.light [class~="text-[#ffb690]"] { color: #b45309; }
+html.light [class~="placeholder:text-[#71717a]"]::placeholder { color: #8a948e; }
+/* texto branco sobre fundos coloridos continua branco */
+html.light [class~="bg-[#93000a]"] [class~="text-white"], html.light [class~="bg-red-600"] { color: #fff; }
+
+/* botões verdes de destaque: mantêm o verde, com texto escuro */
+html.light [class~="bg-[#00ff66]"] { background-color: #12d95c; }
+html.light [class~="hover:bg-[#00cc52]"]:hover { background-color: #0fbf50; }
+
+/* sombras e brilhos mais discretos */
+html.light [class*="shadow-[0_0_"] { box-shadow: 0 1px 3px rgb(15 26 19 / .12); }
+html.light [class~="shadow-lg"], html.light [class~="shadow-2xl"], html.light [class~="shadow-xl"] { box-shadow: 0 8px 24px rgb(15 26 19 / .12); }
+
+/* calendário com caricatura */
+html.light .calendar-wallpaper { opacity: .5; }
+html.light .calendar-veil { background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.85)); }
+
+/* gráficos SVG (textos/linhas de grade) */
+html.light svg text[fill="#a1a1aa"] { fill: #52605a; }
+html.light svg [stroke="#1c1c21"], html.light svg [stroke="#2a2a30"] { stroke: #dfe6df; }
+html.light svg [fill="#121214"], html.light svg [fill="#09090b"], html.light svg [fill="#17171b"] { fill: #f3f6f3; }
+
+html.light [class~="text-red-400"], html.light [class~="hover:text-[#ffb4ab]"]:hover { color: #b3261e; }
+html.light [class~="hover:text-[#00ff66]"]:hover { color: #077a33; }
+html.light [class~="text-white/20"] { color: rgb(15 26 19 / .3); }
+html.light [class~="bg-white/15"], html.light [class~="bg-white/20"] { background-color: rgb(0 0 0 / .08); }
+html.light [class~="bg-red-700"], html.light [class~="bg-red-600"], html.light [class~="bg-[#93000a]"] { background-color: #c62828; color: #fff; }
+
+/* conteúdo sobre foto/gradiente escuro mantém texto claro */
+html.light .on-photo [class~="text-white"] { color: #fff; }
+html.light .on-photo [class~="text-white/80"] { color: rgb(255 255 255 / .85); }
+html.light .on-photo [class~="text-[#00ff66]"] { color: #5dffa0; }
+
+/* campos de formulário legíveis */
+html.light input, html.light select, html.light textarea { color: #0f1a13; }
+html.light input::placeholder, html.light textarea::placeholder { color: #7a857f; }

@@ -9,7 +9,13 @@ const CLASSES = [
   { max: 40, label: 'Obesidade II', color: '#f87171' },
   { max: Infinity, label: 'Obesidade III', color: '#ef4444' },
 ];
-const toNum = (v: string) => parseFloat(v.replace(',', '.'));
+const toNum = (value: string): number => {
+  const normalized = value.trim().replace(',', '.');
+  if (!normalized || !/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) {
+    return Number.NaN;
+  }
+  return Number(normalized);
+};
 
 type Result = null | { invalid: true } | { invalid: false; imc: number; label: string; color: string; pos: number };
 

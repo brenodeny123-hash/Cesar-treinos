@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { addDays, todayFortaleza } from '../lib/time.ts';
 import { useWorkout } from '../context/WorkoutContext.tsx';
 import { Student } from '../types/crm.ts';
 import {
@@ -47,6 +48,7 @@ export const StudentManagerModal: React.FC<StudentManagerModalProps> = ({
   const [goal, setGoal] = useState('Hipertrofia com Definição');
   const [weightKg, setWeightKg] = useState(78.5);
   const [notes, setNotes] = useState('');
+  const [routineExpiresOn, setRoutineExpiresOn] = useState('');
 
   if (!isOpen) return null;
 
@@ -62,6 +64,7 @@ export const StudentManagerModal: React.FC<StudentManagerModalProps> = ({
     setGoal('Hipertrofia com Definição');
     setWeightKg(78.5);
     setNotes('');
+    setRoutineExpiresOn(addDays(todayFortaleza(), 28));
     setIsFormOpen(true);
   };
 
@@ -77,6 +80,7 @@ export const StudentManagerModal: React.FC<StudentManagerModalProps> = ({
     setGoal(student.goal);
     setWeightKg(student.weightKg);
     setNotes(student.notes || '');
+    setRoutineExpiresOn(student.routineExpiresOn || '');
     setIsFormOpen(true);
   };
 
@@ -106,6 +110,7 @@ export const StudentManagerModal: React.FC<StudentManagerModalProps> = ({
         goal: goal.trim(),
         weightKg: Number(weightKg),
         notes: notes.trim() || undefined,
+        routineExpiresOn: routineExpiresOn || undefined,
       });
     } else {
       addStudent({
@@ -120,6 +125,7 @@ export const StudentManagerModal: React.FC<StudentManagerModalProps> = ({
         goal: goal.trim() || 'Hipertrofia',
         weightKg: Number(weightKg) || 75,
         notes: notes.trim() || undefined,
+        routineExpiresOn: routineExpiresOn || addDays(todayFortaleza(), 28),
       });
     }
 
@@ -463,6 +469,17 @@ export const StudentManagerModal: React.FC<StudentManagerModalProps> = ({
               </div>
 
               <div>
+              <label className="text-xs font-semibold text-[#e8ffef] block mb-1">Vencimento da ficha</label>
+              <input
+                type="date"
+                value={routineExpiresOn}
+                onChange={e => setRoutineExpiresOn(e.target.value)}
+                className="w-full h-11 px-3 rounded-xl bg-[#09090b] border border-white/10 text-sm text-white focus:outline-none focus:border-[#00ff66]"
+              />
+              <p className="text-[11px] text-[#a1a1aa] mt-1">O alerta crítico só aparece quando faltarem 3 dias ou menos.</p>
+            </div>
+
+            <div>
                 <label className="text-xs font-semibold text-[#e8ffef] block mb-1">
                   Notas Técnicas / Restrições Médicas
                 </label>

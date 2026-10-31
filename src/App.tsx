@@ -142,7 +142,7 @@ export default function App() {
         <section className="max-w-lg rounded-3xl border border-[#ffb4ab]/30 bg-[#0f0f12] p-8 text-center shadow-2xl">
           <h1 className="text-xl font-bold font-display text-white">Configuração incompleta</h1>
           <p className="mt-3 text-sm leading-relaxed text-[#a1a1aa]">
-            Para iniciar o PulseFit, configure <code className="text-[#3ECF8E]">VITE_SUPABASE_URL</code> e{' '}
+            Para iniciar o Cesar Treinos, configure <code className="text-[#3ECF8E]">VITE_SUPABASE_URL</code> e{' '}
             <code className="text-[#3ECF8E]">VITE_SUPABASE_ANON_KEY</code> no arquivo local de ambiente.
             Depois, reinicie o servidor de desenvolvimento.
           </p>

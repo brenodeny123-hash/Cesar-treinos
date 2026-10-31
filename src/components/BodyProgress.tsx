@@ -1,4 +1,4 @@
-import { todayFortaleza } from '../lib/time.ts';
+import { formatFortalezaDate, parseFortalezaDate, todayFortaleza } from '../lib/time.ts';
 import React, { useState } from 'react';
 import { useWorkout } from '../context/WorkoutContext.tsx';
 import {
@@ -165,8 +165,7 @@ export const BodyProgress: React.FC = () => {
 
         <div className="space-y-2.5">
           {measurements.map(item => {
-            const dateObj = new Date(`${item.date}T12:00:00-03:00`);
-            const dateStr = dateObj.toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza',
+            const dateStr = formatFortalezaDate(parseFortalezaDate(item.date), {
               day: '2-digit',
               month: 'short',
               year: 'numeric',
@@ -225,7 +224,7 @@ export const BodyProgress: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold font-display text-white">Nova Medição Corporal</h3>
-                <span className="text-xs text-[#a1a1aa]">Hoje, {new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' })}</span>
+                <span className="text-xs text-[#a1a1aa]">Hoje, {formatFortalezaDate(new Date())}</span>
               </div>
               <button
                 type="button"

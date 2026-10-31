@@ -1,5 +1,6 @@
 import React from 'react';
 import { useWorkout } from '../context/WorkoutContext.tsx';
+import { daysBetween, todayFortaleza, formatFortalezaDate, parseFortalezaDate } from '../lib/time.ts';
 import {
   X,
   Users,
@@ -36,6 +37,14 @@ export const CoachViewModal: React.FC<CoachViewModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Alerta crítico: só quando a ficha realmente está perto de vencer (até 3 dias) ou já venceu.
+  const ALERT_DAYS = 3;
+  const today = todayFortaleza();
+  const expiring = students
+    .filter(st => st.routineExpiresOn && /^\d{4}-\d{2}-\d{2}$/.test(st.routineExpiresOn))
+    .map(st => ({ student: st, daysLeft: daysBetween(today, st.routineExpiresOn as string) }))
+    .filter(x => x.daysLeft <= ALERT_DAYS)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
   const totalMonthlyFee = students.reduce((acc, s) => acc + (s.monthlyFee || 0), 0);
 
   return (
@@ -78,7 +87,7 @@ export const CoachViewModal: React.FC<CoachViewModalProps> = ({
         <div className="space-y-1">
           <div className="flex items-center justify-between text-xs text-[#a1a1aa]">
             <span>Modo Treinador Pro</span>
-            <span>Terça, 27 de Outubro</span>
+            <span className="capitalize">{formatFortalezaDate(parseFortalezaDate(today), { weekday: 'long', day: '2-digit', month: 'long' })}</span>
           </div>
           <h1 className="text-2xl font-bold font-display text-white">
             Olá, Cesar! 💪
@@ -111,38 +120,20 @@ export const CoachViewModal: React.FC<CoachViewModalProps> = ({
             </div>
           </div>
 
-          {/* Bento 2: Checkins */}
-          <div className="bg-[#0f0f12] rounded-2xl p-4 border border-white/5 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="p-2 rounded-xl bg-[#121214] text-[#39ff14]">
-                <CheckCircle className="w-4 h-4" />
-              </span>
-              <span className="text-[10px] font-semibold text-[#5be7ff]">78% meta</span>
-            </div>
-            <div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold font-display text-white tabular-nums">14</span>
-                <span className="text-xs text-[#a1a1aa]">/18</span>
-              </div>
-              <span className="text-xs text-[#a1a1aa]">Check-ins Hoje</span>
-            </div>
-            <div className="w-full bg-[#121214] h-1.5 rounded-full overflow-hidden">
-              <div className="bg-[#39ff14] h-full rounded-full" style={{ width: '78%' }} />
-            </div>
-          </div>
-
           {/* Bento 3: Sheets Renewal */}
           <div className="bg-[#0f0f12] rounded-2xl p-4 border border-white/5 space-y-3">
             <div className="flex items-center justify-between">
               <span className="p-2 rounded-xl bg-[#121214] text-[#ffb4ab]">
                 <FileText className="w-4 h-4" />
               </span>
-              <span className="text-[10px] font-semibold text-[#ffb4ab] bg-[#ffb4ab]/15 px-2 py-0.5 rounded-full">
-                Urgente
-              </span>
+              {expiring.length > 0 && (
+                <span className="text-[10px] font-semibold text-[#ffb4ab] bg-[#ffb4ab]/15 px-2 py-0.5 rounded-full">
+                  Urgente
+                </span>
+              )}
             </div>
             <div>
-              <span className="text-2xl font-bold font-display text-white block tabular-nums">4</span>
+              <span className="text-2xl font-bold font-display text-white block tabular-nums">{expiring.length}</span>
               <span className="text-xs text-[#a1a1aa]">Fichas a Renovar</span>
             </div>
           </div>
@@ -152,9 +143,6 @@ export const CoachViewModal: React.FC<CoachViewModalProps> = ({
             <div className="flex items-center justify-between">
               <span className="p-2 rounded-xl bg-[#121214] text-[#5be7ff]">
                 <DollarSign className="w-4 h-4" />
-              </span>
-              <span className="text-[10px] font-semibold text-[#5be7ff] bg-[#5be7ff]/15 px-2 py-0.5 rounded-full">
-                95% pago
               </span>
             </div>
             <div>
@@ -272,39 +260,34 @@ export const CoachViewModal: React.FC<CoachViewModalProps> = ({
           </div>
         </div>
 
-        {/* Coach Critical Alerts */}
-        <div className="bg-[#0f0f12] rounded-2xl p-4 border border-white/5 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ffb4ab] flex items-center gap-1.5">
-              <AlertTriangle className="w-4 h-4" /> Alertas Críticos
-            </h3>
-            <span className="text-[10px] text-[#ffb4ab] font-bold bg-[#ffb4ab]/15 px-2 py-0.5 rounded-full">
-              2 Novos
-            </span>
-          </div>
-
-          <div className="space-y-2 text-xs">
-            <div className="p-3 rounded-xl bg-[#121214] border border-white/5 space-y-1">
-              <div className="flex items-center justify-between font-semibold text-white">
-                <span>Ficha de Rodrigo vence amanhã</span>
-                <span className="text-[11px] text-[#ffb4ab]">1d restando</span>
-              </div>
-              <p className="text-[#a1a1aa]">
-                Completou 8 semanas no ciclo atual de Força. Pronto para nova periodização.
-              </p>
+        {/* Alertas críticos: aparecem somente quando há ficha perto de vencer */}
+        {expiring.length > 0 && (
+          <div className="bg-[#0f0f12] rounded-2xl p-4 border border-[#ffb4ab]/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#ffb4ab] flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4" /> Alertas Críticos
+              </h3>
+              <span className="text-[10px] text-[#ffb4ab] font-bold bg-[#ffb4ab]/15 px-2 py-0.5 rounded-full">
+                {expiring.length} {expiring.length === 1 ? 'ficha' : 'fichas'}
+              </span>
             </div>
-
-            <div className="p-3 rounded-xl bg-[#121214] border border-white/5 space-y-1">
-              <div className="flex items-center justify-between font-semibold text-white">
-                <span>Mensalidade Confirmada: Paula</span>
-                <span className="text-[11px] text-[#39ff14]">R$ 220,00</span>
-              </div>
-              <p className="text-[#a1a1aa]">
-                Plano Trimestral renovado via PIX com comprovante anexado.
-              </p>
+            <div className="space-y-2 text-xs">
+              {expiring.map(({ student, daysLeft }) => (
+                <div key={student.id} className="p-3 rounded-xl bg-[#121214] border border-white/5 space-y-1">
+                  <div className="flex items-center justify-between font-semibold text-white">
+                    <span>
+                      Ficha de {student.name.split(' ')[0]} {daysLeft < 0 ? 'venceu' : daysLeft === 0 ? 'vence hoje' : daysLeft === 1 ? 'vence amanhã' : `vence em ${daysLeft} dias`}
+                    </span>
+                    <span className="text-[11px] text-[#ffb4ab]">
+                      {daysLeft < 0 ? `${-daysLeft}d de atraso` : `${daysLeft}d restando`}
+                    </span>
+                  </div>
+                  <p className="text-[#a1a1aa]">Hora de preparar um novo ciclo de treino para {student.name.split(' ')[0]}.</p>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

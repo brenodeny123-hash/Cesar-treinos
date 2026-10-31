@@ -13,13 +13,16 @@ export const AttendanceCalendar: React.FC = () => {
   const [y, m] = ym.split('-').map(Number);
   const offset = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
   const total = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const trained = new Set(workoutLogs.map(l => l.date));
+  const hasDate = /^\d{4}-\d{2}-\d{2}$/.test(studentProfile.joinedDate);
+  const trained = new Set(workoutLogs.map(l => l.date).filter(d => !hasDate || d >= studentProfile.joinedDate));
   const monthCount = Array.from({ length: total }, (_, i) => `${ym}-${String(i + 1).padStart(2, '0')}`).filter(d => trained.has(d)).length;
   const shift = (d: number) => setYm(new Date(Date.UTC(y, m - 1 + d, 1)).toISOString().slice(0, 7));
-  const hasDate = /^\d{4}-\d{2}-\d{2}$/.test(studentProfile.joinedDate);
 
   return (
-    <section className="rounded-2xl bg-[#121214] border border-[#00ff66]/20 p-4 my-4">
+    <section className="calendar-card relative overflow-hidden rounded-2xl bg-[#121214] border border-white/10 p-4 my-4">
+      <img src="/cesar-avatar.jpg" alt="" aria-hidden="true" className="calendar-wallpaper pointer-events-none absolute inset-0 h-full w-full object-cover object-[50%_25%]" />
+      <div className="calendar-veil absolute inset-0" aria-hidden="true" />
+      <div className="relative">
       <div className="flex items-center justify-between">
         <h2 className="font-display text-base font-bold text-[#e8ffef] flex items-center gap-2"><CalendarDays className="w-4 h-4 text-[#00ff66]" /> Frequência</h2>
         {hasDate && <span className="text-[11px] font-bold text-[#00ff66] bg-[#00ff66]/10 px-2 py-1 rounded-lg">Dia {dayNumber(studentProfile.joinedDate)}</span>}
@@ -44,6 +47,7 @@ export const AttendanceCalendar: React.FC = () => {
         })}
       </div>
       <p className="mt-3 text-[11px] text-[#a1a1aa]">{monthCount} {monthCount === 1 ? 'dia treinado' : 'dias treinados'} neste mês • sequência atual: {studentProfile.streakDays} {studentProfile.streakDays === 1 ? 'dia' : 'dias'}</p>
+      </div>
     </section>
   );
 };
