@@ -1,4 +1,3 @@
-import { ExerciseReference } from './ExerciseReference.tsx';
 import { ExerciseGuide } from './ExerciseGuide.tsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -342,7 +341,6 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
                 </div>
               </div>
 
-              <ExerciseReference name={currentExercise.name} />
               <ExerciseGuide name={currentExercise.name} muscleGroup={currentExercise.muscleGroup} />
               {/* Memory of Last Session & Coach Notes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">

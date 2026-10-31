@@ -130,7 +130,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const uid = user?.uid ?? 'anon';
   const isDemo = uid.startsWith('demo-');
   const k = (name: string) => `pulsefit:${uid}:${name}`;
-  // Dados de exemplo só existem em contas de demonstração; contas reais começam zeradas.
+  // Alunos reais recebem as fichas iniciais; perfil, histórico e medidas começam vazios.
   function seed<T>(demo: T, fresh: T): T { return isDemo ? demo : fresh; }
   // Versão dos dados de demonstração: ao mudar, descarta o que ficou salvo no navegador (ex.: alunos fictícios antigos).
   if (isDemo) {
@@ -145,9 +145,13 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [routines, setRoutines] = useState<WorkoutRoutine[]>(() => {
     try {
       const saved = localStorage.getItem(k('routines'));
-      return saved ? JSON.parse(saved) : seed(INITIAL_ROUTINES, [] as WorkoutRoutine[]);
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed as WorkoutRoutine[];
+      }
+      return INITIAL_ROUTINES;
     } catch {
-      return seed(INITIAL_ROUTINES, [] as WorkoutRoutine[]);
+      return INITIAL_ROUTINES;
     }
   });
 

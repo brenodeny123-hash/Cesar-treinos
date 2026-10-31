@@ -5,6 +5,10 @@ import {
   supabase,
   supabaseRuntimeDiagnostics,
 } from '../lib/supabase.ts';
+import {
+  classifyAuthError,
+  getAuthErrorDetails,
+} from '../lib/supabaseAuthErrors.ts';
 
 export interface AppUser {
   uid: string;
@@ -16,30 +20,6 @@ export interface AppUser {
 
 type AuthResult = { success: boolean; error?: string; message?: string };
 type AuthAction = 'login' | 'register' | 'reset' | 'logout';
-type AuthErrorLike = {
-  code?: string;
-  message?: string;
-  name?: string;
-  status?: number;
-  statusCode?: number;
-};
-
-type AuthErrorCategory =
-  | 'configuration'
-  | 'invalid_api_key'
-  | 'domain_not_allowed'
-  | 'provider_disabled'
-  | 'email_not_confirmed'
-  | 'user_not_found'
-  | 'profile_missing'
-  | 'invalid_credentials'
-  | 'rate_limited'
-  | 'permission_denied'
-  | 'service_unavailable'
-  | 'timeout'
-  | 'network'
-  | 'other';
-
 interface AuthContextType {
   user: AppUser | null;
   isAuthenticated: boolean;
@@ -58,132 +38,6 @@ interface AuthContextType {
 export const DEMO_ALLOWED = import.meta.env.DEV || import.meta.env.VITE_ALLOW_DEMO === 'true';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const getAuthErrorDetails = (error: unknown) => {
-  const details = error && typeof error === 'object' ? (error as AuthErrorLike) : {};
-  const code = details.code?.toLowerCase() ?? '';
-  const message = details.message?.toLowerCase() ?? '';
-  const combined = `${code} ${message}`;
-  const status = Number.isInteger(details.status)
-    ? details.status
-    : Number.isInteger(details.statusCode)
-      ? details.statusCode
-      : undefined;
-
-  return { details, code, combined, status };
-};
-
-const classifyAuthError = (error: unknown): AuthErrorCategory => {
-  const { details, code, combined, status } = getAuthErrorDetails(error);
-
-  if (
-    combined.includes('vite_supabase_') ||
-    (combined.includes('supabase') &&
-      (combined.includes('configuração') ||
-        combined.includes('configure') ||
-        combined.includes('url válida') ||
-        combined.includes('incompleta'))) ||
-    combined.includes('service_role') ||
-    combined.includes('sb_secret_')
-  ) {
-    return 'configuration';
-  }
-  if (
-    ['invalid_api_key', 'no_api_key', 'bad_jwt', 'pgrst301'].includes(code) ||
-    combined.includes('invalid api key') ||
-    combined.includes('api key not valid') ||
-    (status === 401 && !code.includes('invalid_credentials'))
-  ) {
-    return 'invalid_api_key';
-  }
-  if (
-    code.includes('redirect') && (code.includes('not_allowed') || code.includes('invalid')) ||
-    combined.includes('redirect url not allowed') ||
-    combined.includes('redirect url') && combined.includes('not allowed') ||
-    combined.includes('email_redirect_to') ||
-    combined.includes('not allowed uri')
-  ) {
-    return 'domain_not_allowed';
-  }
-  if (
-    [
-      'provider_disabled',
-      'email_provider_disabled',
-      'signup_disabled',
-      'operation_not_allowed',
-      'unsupported_provider',
-    ].includes(code) ||
-    combined.includes('signups not allowed') ||
-    combined.includes('provider is disabled')
-  ) {
-    return 'provider_disabled';
-  }
-  if (code.includes('email_not_confirmed') || combined.includes('email not confirmed')) {
-    return 'email_not_confirmed';
-  }
-  if (
-    code === 'user_not_found' ||
-    code === 'user_not_exists' ||
-    combined.includes('user not found')
-  ) {
-    return 'user_not_found';
-  }
-  if (
-    code === 'invalid_credentials' ||
-    combined.includes('invalid login credentials') ||
-    combined.includes('wrong password')
-  ) {
-    return 'invalid_credentials';
-  }
-  if (
-    status === 429 ||
-    combined.includes('too many requests') ||
-    combined.includes('rate limit') ||
-    combined.includes('over_request_rate_limit')
-  ) {
-    return 'rate_limited';
-  }
-  if (
-    status === 403 ||
-    code === '42501' ||
-    code === 'insufficient_permissions' ||
-    combined.includes('row-level security')
-  ) {
-    return 'permission_denied';
-  }
-  if (status !== undefined && status >= 500) {
-    return 'service_unavailable';
-  }
-  if (
-    details.name === 'AbortError' ||
-    details.name === 'TimeoutError' ||
-    code.includes('timeout') ||
-    code === 'etimedout'
-  ) {
-    return 'timeout';
-  }
-  if (
-    combined.includes('failed to fetch') ||
-    combined.includes('fetch failed') ||
-    combined.includes('networkerror') ||
-    combined.includes('network request failed') ||
-    combined.includes('load failed') ||
-    details.name === 'AuthRetryableFetchError' ||
-    (details.name === 'TypeError' && status === undefined)
-  ) {
-    return 'network';
-  }
-
-  if (
-    code === 'pgrst116' ||
-    combined.includes('multiple (or no) rows returned') ||
-    combined.includes('perfil ausente')
-  ) {
-    return 'profile_missing';
-  }
-
-  return 'other';
-};
 
 const mapAuthError = (error: unknown, action: AuthAction): string => {
   const { code, combined } = getAuthErrorDetails(error);
@@ -209,20 +63,27 @@ const mapAuthError = (error: unknown, action: AuthAction): string => {
       return 'Muitas tentativas em pouco tempo. Aguarde alguns minutos antes de tentar novamente.';
     case 'permission_denied':
       return 'A autenticação ou o acesso ao perfil foi recusado. Confira a sessão e as políticas RLS da tabela profiles.';
+    case 'authentication':
+      return 'O Supabase recusou a autenticação. Confira os dados da conta e tente novamente.';
+    case 'http_error':
+      if (action === 'register' && getAuthErrorDetails(error).status === 422) {
+        return 'O Supabase recusou os dados do cadastro (HTTP 422). Confira o formato do e-mail, os requisitos da senha e se esse e-mail j\u00e1 possui uma conta.';
+      }
+      return `O Supabase respondeu com HTTP ${getAuthErrorDetails(error).status ?? '4xx'}. Confira o endpoint e tente novamente.`;
     case 'service_unavailable':
       return 'O serviço Supabase está temporariamente indisponível. Tente novamente mais tarde.';
     case 'timeout':
       return 'A conexão com o Supabase excedeu o tempo limite. Verifique a rede e tente novamente.';
     case 'network':
-      return 'Falha de rede ao conectar ao Supabase. Verifique a conexão, DNS, VPN/proxy e bloqueios do navegador.';
+      return 'N\u00e3o foi poss\u00edvel concluir a conex\u00e3o com o Supabase. Verifique o acesso \u00e0 internet e tente novamente. O navegador n\u00e3o identifica com seguran\u00e7a se a causa foi DNS, VPN, proxy ou firewall.';
     case 'other':
-      if (code === 'user_already_exists' || combined.includes('already registered')) {
+      if (['user_already_exists', 'email_exists'].includes(code) || combined.includes('already registered')) {
         return 'Este e-mail já está cadastrado. Tente entrar ou recuperar sua senha.';
       }
-      if (code === 'weak_password' || combined.includes('password should be')) {
-        return 'A senha deve ter pelo menos 6 caracteres.';
+      if (code === 'weak_password' || combined.includes('password should be') || combined.includes('password is too weak')) {
+        return 'A senha não atende aos requisitos do Supabase. Tente uma senha mais longa e forte.';
       }
-      if (code === 'invalid_email' || combined.includes('email address is invalid')) {
+      if (['invalid_email', 'email_address_invalid'].includes(code) || combined.includes('email address is invalid')) {
         return 'Confira o formato do e-mail informado.';
       }
       if (action === 'reset') {
@@ -245,7 +106,7 @@ const logAuthFailure = (action: AuthAction, error: unknown): void => {
     action,
     category: classifyAuthError(error),
     code: safeCode,
-    httpStatus: status !== undefined && status > 0 ? status : null,
+    httpStatus: status ?? null,
     applicationOrigin: typeof window === 'undefined' ? 'unknown' : window.location.origin,
     errorName: safeName,
     ...supabaseRuntimeDiagnostics,

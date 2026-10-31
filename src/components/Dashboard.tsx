@@ -183,10 +183,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <button
               type="button"
-              onClick={() => onStartWorkout(currentRoutine.id)}
+              onClick={() => onNavigateTab('treinos')}
               className="px-5 py-3 rounded-2xl bg-[#00ff66] hover:bg-[#00cc52] text-[#04130a] text-xs font-bold font-display flex items-center gap-2 shadow-lg shadow-[#00ff66]/25 active:scale-95 transition-all"
             >
-              <Play className="w-4 h-4 fill-white" /> Iniciar Treino
+              <ChevronRight className="w-4 h-4" /> Escolher ficha
             </button>
           </div>
         </div>

@@ -1,83 +1,31 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { isSupabaseServiceRoleKey } from './supabaseKey.ts';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  createConfiguredSupabaseClient,
+  resolveSupabaseConfiguration,
+} from './supabaseConfig.ts';
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim();
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
-const hasPrivilegedKey = Boolean(anonKey && isSupabaseServiceRoleKey(anonKey));
-
-type SupabaseConfigurationIssue =
-  | 'missing_url'
-  | 'missing_public_key'
-  | 'privileged_key'
-  | 'invalid_url'
-  | 'invalid_protocol';
-
-let configurationIssue: SupabaseConfigurationIssue | null = null;
-let projectHost: string | null = null;
+const configuration = resolveSupabaseConfiguration(url, anonKey);
+const { config, issue: configurationIssue } = configuration;
 
 if (import.meta.env.PROD && (!url || !anonKey)) {
   console.warn(
     'Supabase não configurado neste deploy. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas variáveis de ambiente da Vercel e faça um novo deploy.',
   );
 }
-if (hasPrivilegedKey) {
+if (configurationIssue === 'privileged_key') {
   console.error('Uma chave privilegiada foi configurada como VITE_SUPABASE_ANON_KEY e não será usada no navegador.');
 }
 
-const config = (() => {
-  if (!url) {
-    configurationIssue = 'missing_url';
-    return null;
-  }
-  if (!anonKey) {
-    configurationIssue = 'missing_public_key';
-    return null;
-  }
-  if (hasPrivilegedKey) {
-    configurationIssue = 'privileged_key';
-    return null;
-  }
-
-  try {
-    const parsedUrl = new URL(url);
-    projectHost = parsedUrl.host;
-    if (
-      parsedUrl.protocol !== 'https:' &&
-      !(parsedUrl.protocol === 'http:' && parsedUrl.hostname === 'localhost')
-    ) {
-      configurationIssue = 'invalid_protocol';
-      return null;
-    }
-    return { url, anonKey };
-  } catch {
-    configurationIssue = 'invalid_url';
-    return null;
-  }
-})();
-
-export const isSupabaseConfigured = config !== null;
+export const isSupabaseConfigured = configuration.config !== null;
 export const supabaseRuntimeDiagnostics = Object.freeze({
   configured: isSupabaseConfigured,
-  projectHost,
-  publicKeyType: !anonKey
-    ? 'missing'
-    : hasPrivilegedKey
-      ? 'privileged'
-      : anonKey.startsWith('sb_publishable_')
-        ? 'publishable'
-        : anonKey.split('.').length === 3
-          ? 'legacy_jwt'
-          : 'unrecognized',
+  projectHost: configuration.projectHost,
+  publicKeyType: configuration.publicKeyType,
   configurationIssue,
 });
-export const supabase: SupabaseClient | null = config
-  ? createClient(config.url, config.anonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-      },
-    })
-  : null;
+export const supabase: SupabaseClient | null = createConfiguredSupabaseClient(config);
 
 export const getSupabaseClient = (): SupabaseClient => {
   if (!supabase) {
