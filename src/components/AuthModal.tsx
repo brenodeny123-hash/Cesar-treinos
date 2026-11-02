@@ -20,6 +20,7 @@ interface AuthModalProps {
 }
 
 type UserRole = 'student' | 'coach';
+const AUTHORIZED_COACH_EMAIL = 'professor@academia.com';
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const {
@@ -142,7 +143,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           <p className="text-xs text-[#a1a1aa]">
             {mode === 'login' && !isCoach && 'Gerencie seus treinos, cargas e evolução física.'}
             {mode === 'login' && isCoach && 'Painel do professor — gerencie alunos e fichas.'}
-            {mode === 'register' && 'Cadastre-se para acompanhar sua ficha de treino.'}
+            {mode === 'register' && !isCoach && 'Cadastre-se para acompanhar sua ficha de treino.'}
+            {mode === 'register' && isCoach && `Cadastro de treinador autorizado para ${AUTHORIZED_COACH_EMAIL}. Confirme esse e-mail para liberar o painel.`}
             {mode === 'forgot' && 'Digite seu e-mail para receber as instruções.'}
           </p>
         </div>
@@ -182,7 +184,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center gap-2 rounded-xl border border-[#00ff66]/20 bg-[#00ff66]/5 px-3 py-2">
             <ShieldCheck className="w-4 h-4 text-[#00ff66] shrink-0" />
             <p className="text-[11px] text-[#a1a1aa]">
-              Acesso restrito ao professor. Use as credenciais cadastradas no painel do treinador.
+              {mode === 'register'
+                ? email.trim().toLowerCase() === AUTHORIZED_COACH_EMAIL
+                  ? 'Este e-mail receberá o perfil de treinador após a confirmação da conta.'
+                  : `Somente ${AUTHORIZED_COACH_EMAIL} pode receber o perfil de treinador; outros e-mails serão cadastrados como aluno.`
+                : 'Acesso restrito ao professor. Use as credenciais cadastradas no painel do treinador.'}
             </p>
           </div>
         )}
@@ -368,7 +374,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   <span>{isCoach ? 'Entrar como Treinador' : 'Entrar no Cesar Treinos'}</span>
                 </>
               ) : (
-                <span>Cadastrar Minha Conta</span>
+                <span>{isCoach ? 'Criar Conta de Treinador' : 'Cadastrar Minha Conta'}</span>
               )}
             </button>
           )}
