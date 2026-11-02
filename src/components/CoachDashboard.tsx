@@ -45,13 +45,29 @@ export const CoachDashboard: React.FC<CoachDashboardProps> = ({ onNavigateTab })
   return (
     <div className="space-y-5 pb-24">
       <section className="rounded-3xl border border-[#00ff66]/20 bg-gradient-to-br from-[#102117] via-[#0f0f12] to-[#0f0f12] p-5 sm:p-6">
-        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#00ff66]">Área do treinador</span>
-        <h1 className="mt-2 text-2xl font-bold font-display text-white">
-          Olá, {user?.displayName || 'Treinador'}
-        </h1>
-        <p className="mt-1 max-w-xl text-sm text-[#a1a1aa]">
-          Gerencie seus alunos, organize as fichas e acompanhe o que precisa de atenção.
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#00ff66]">Área do treinador</span>
+            <h1 className="mt-2 text-2xl font-bold font-display text-white">
+              Olá, {user?.displayName || 'Treinador'}
+            </h1>
+            <p className="mt-1 max-w-xl text-sm text-[#a1a1aa]">
+              Gerencie seus alunos, organize as fichas e acompanhe o que precisa de atenção.
+            </p>
+          </div>
+          <figure className="relative w-20 shrink-0 sm:w-28">
+            <img
+              src="/images/cesar/cesar-agachamento.jpg"
+              alt="Cesar agachando com uma barra na academia"
+              loading="lazy"
+              decoding="async"
+              className="h-24 w-full rounded-2xl border border-white/10 object-cover object-top sm:h-32"
+            />
+            <figcaption className="absolute inset-x-1 bottom-1 rounded-lg bg-black/75 px-1 py-1 text-center text-[8px] font-semibold text-white sm:text-[9px]">
+              Cesar fiscalizando o agachamento
+            </figcaption>
+          </figure>
+        </div>
         <div className="mt-5 flex flex-wrap gap-2">
           <button
             type="button"

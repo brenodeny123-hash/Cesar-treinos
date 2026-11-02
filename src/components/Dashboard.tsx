@@ -79,10 +79,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </span>
         </div>
 
-        <div className="on-photo mt-3 relative overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f12]">
-          <img src="/cesar-avatar.jpg" alt="Caricatura do Cesar, seu treinador" className="w-full h-64 sm:h-72 object-cover object-[50%_28%]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-4">
+        <div className="on-photo mt-3 relative min-h-[210px] overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f12] sm:min-h-[230px]">
+          <img
+            src="/images/cesar/cesar-halter.jpg"
+            alt="Cesar levantando um halter na academia"
+            loading="eager"
+            decoding="async"
+            className="absolute inset-y-0 right-0 h-full w-[72%] object-cover object-[48%_24%] sm:w-[58%]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0f0f12] via-[#0f0f12]/90 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="relative z-10 flex min-h-[210px] max-w-[74%] flex-col justify-end p-4 sm:min-h-[230px] sm:max-w-[62%]">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#00ff66]">#TeamCesar</span>
             <p className="text-2xl font-bold font-display text-white leading-tight">Cesar Treinos</p>
             <p className="text-xs text-white/80">Treine com foco. Evolua com consistência.</p>

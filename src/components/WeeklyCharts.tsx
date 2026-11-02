@@ -112,6 +112,22 @@ export const WeeklyCharts: React.FC = () => {
         </p>
       </div>
 
+      <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-[#0f0f12] p-3">
+        <img
+          src="/images/cesar/cesar-esteira.jpg"
+          alt="Cesar correndo na esteira"
+          loading="lazy"
+          decoding="async"
+          className="h-20 w-20 shrink-0 rounded-xl object-cover object-center"
+        />
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#5be7ff]">Ritmo do Cesar</span>
+          <p className="mt-1 text-xs leading-relaxed text-[#e8ffef]">
+            Ele está correndo atrás da sua próxima evolução. Mostre esses gráficos pra ele!
+          </p>
+        </div>
+      </div>
+
       {/* KPI Bento Summary */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-[#0f0f12] rounded-2xl p-4 border border-white/5 relative overflow-hidden">

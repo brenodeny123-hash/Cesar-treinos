@@ -265,6 +265,22 @@ export const WorkoutRoutines: React.FC<WorkoutRoutinesProps> = ({ onStartRoutine
         </button>
       </div>
 
+      <div className="flex items-center gap-3 overflow-hidden rounded-2xl border border-white/5 bg-gradient-to-r from-[#111a14] to-[#0f0f12] p-3">
+        <img
+          src="/images/cesar/cesar-flexao.jpg"
+          alt="Cesar fazendo flexões na academia"
+          loading="lazy"
+          decoding="async"
+          className="h-20 w-20 shrink-0 rounded-xl object-cover object-center"
+        />
+        <div className="min-w-0">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#00ff66]">Aquecimento do Cesar</span>
+          <p className="mt-1 text-xs leading-relaxed text-[#e8ffef]">
+            Ele falou “só mais três flexões” faz meia hora. Enquanto isso, escolha sua ficha!
+          </p>
+        </div>
+      </div>
+
       {/* Routine Tabs / Cards Scroller */}
       <div className="flex gap-2.5 overflow-x-auto no-scrollbar py-1">
         {routines.map(routine => {

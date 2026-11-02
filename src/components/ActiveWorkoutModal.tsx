@@ -120,6 +120,22 @@ export const ActiveWorkoutModal: React.FC<ActiveWorkoutModalProps> = ({ isOpen, 
               </div>
             </div>
 
+            <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-[#121214] p-3 text-left">
+              <img
+                src="/images/cesar/cesar-shake.jpg"
+                alt="Cesar tomando um shake depois do treino"
+                loading="lazy"
+                decoding="async"
+                className="h-20 w-20 shrink-0 rounded-xl object-cover object-center"
+              />
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#00ff66]">Recuperação do Cesar</span>
+                <p className="mt-1 text-xs leading-relaxed text-[#e8ffef]">
+                  Shake aprovado! Água também conta — o Cesar conferiu.
+                </p>
+              </div>
+            </div>
+
             {/* PRs achieved if any */}
             {completedSummary.prs.length > 0 && (
               <div className="bg-[#1c1c21] p-3.5 rounded-2xl border border-[#7dff5c]/30 text-left space-y-1.5">
