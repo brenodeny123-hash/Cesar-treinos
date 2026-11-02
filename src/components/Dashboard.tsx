@@ -14,24 +14,18 @@ import {
   TrendingUp,
   Clock,
   Sparkles,
-  UserCheck,
-  Users,
 } from 'lucide-react';
 
 interface DashboardProps {
   onStartWorkout: (routineId: string) => void;
-  onOpenCoachView: () => void;
-  onOpenStudentManager: () => void;
   onNavigateTab: (tab: 'inicio' | 'treinos' | 'evolucao' | 'medidas') => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
   onStartWorkout,
-  onOpenCoachView,
-  onOpenStudentManager,
   onNavigateTab,
 }) => {
-  const { studentProfile, routines, activeWorkout, workoutLogs, measurements, students } = useWorkout();
+  const { studentProfile, routines, activeWorkout, workoutLogs, measurements } = useWorkout();
   const { user } = useAuth();
 
   const currentRoutine = routines[0] || {
@@ -78,32 +72,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
     <div className="space-y-5 pb-24">
       {/* Top Banner & Greeting */}
       <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#39ff14] animate-pulse" />
-            <span className="text-[11px] font-semibold text-[#39ff14] uppercase tracking-wider">
-              {user?.role === 'coach' ? 'Modo Treinador Pro' : 'Aluno Ativo • #TeamCesar'}
-            </span>
-          </div>
-          {user?.role === 'coach' && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onOpenStudentManager}
-              className="text-[11px] font-semibold text-[#5be7ff] hover:underline flex items-center gap-1"
-            >
-              <Users className="w-3.5 h-3.5" /> Alunos ({students.length})
-            </button>
-            <span className="text-white/20">·</span>
-            <button
-              type="button"
-              onClick={onOpenCoachView}
-              className="text-[11px] font-semibold text-[#00ff66] hover:underline flex items-center gap-1"
-            >
-              <UserCheck className="w-3.5 h-3.5" /> CRM Cesar
-            </button>
-          </div>
-          )}
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#39ff14] animate-pulse" />
+          <span className="text-[11px] font-semibold text-[#39ff14] uppercase tracking-wider">
+            Aluno Ativo • #TeamCesar
+          </span>
         </div>
 
         <div className="on-photo mt-3 relative overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f12]">
@@ -299,15 +272,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <span className="text-[11px] text-[#a1a1aa]">Acesso veloz</span>
         </div>
         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
-          {user?.role === 'coach' && (
-          <button
-            type="button"
-            onClick={onOpenStudentManager}
-            className="px-4 py-2.5 rounded-xl bg-[#00ff66] text-[#09090b] font-bold text-xs flex items-center gap-1.5 whitespace-nowrap active:scale-95 shadow-md"
-          >
-            <Users className="w-3.5 h-3.5 fill-[#09090b]" /> + Alunos (CRUD)
-          </button>
-          )}
           <button
             type="button"
             onClick={() => onNavigateTab('treinos')}

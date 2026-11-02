@@ -75,7 +75,7 @@ interface WorkoutContextType {
   deleteStudent: (id: string) => void;
 
   // Workout Routines CRUD
-  createRoutine: (routine: Omit<WorkoutRoutine, 'id'>) => void;
+  createRoutine: (routine: Omit<WorkoutRoutine, 'id'>) => string;
   updateRoutine: (id: string, updates: Partial<WorkoutRoutine>) => void;
   deleteRoutine: (id: string) => void;
   duplicateRoutine: (id: string) => void;
@@ -100,6 +100,21 @@ const newId = (): string => {
   b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
   const h = Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+};
+
+const ensureUniqueRoutineIds = (routines: WorkoutRoutine[]): WorkoutRoutine[] => {
+  const usedIds = new Set<string>();
+  return routines.map(routine => {
+    if (routine.id && !usedIds.has(routine.id)) {
+      usedIds.add(routine.id);
+      return routine;
+    }
+
+    let id = newId();
+    while (usedIds.has(id)) id = newId();
+    usedIds.add(id);
+    return { ...routine, id };
+  });
 };
 
 const DEMO_DATA_VERSION = '3-lucas-only';
@@ -147,7 +162,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const saved = localStorage.getItem(k('routines'));
       if (saved) {
         const parsed: unknown = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed as WorkoutRoutine[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return ensureUniqueRoutineIds(parsed as WorkoutRoutine[]);
+        }
       }
       return INITIAL_ROUTINES;
     } catch {
@@ -675,10 +692,11 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // --- WORKOUT ROUTINES CRUD ---
   const createRoutine = (data: Omit<WorkoutRoutine, 'id'>) => {
     const newRoutine: WorkoutRoutine = {
-      id: `routine-${Date.now()}`,
+      id: newId(),
       ...data,
     };
     setRoutines(prev => [...prev, newRoutine]);
+    return newRoutine.id;
   };
 
   const updateRoutine = (id: string, updates: Partial<WorkoutRoutine>) => {
@@ -693,10 +711,10 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const duplicateRoutine = (id: string) => {
     const source = routines.find(r => r.id === id);
     if (!source) return;
-    const newId = `routine-${Date.now()}`;
+    const newRoutineId = newId();
     const duplicated: WorkoutRoutine = {
       ...source,
-      id: newId,
+      id: newRoutineId,
       code: `${source.code}2`,
       title: `${source.title} (Cópia)`,
       exercises: source.exercises.map(ex => ({

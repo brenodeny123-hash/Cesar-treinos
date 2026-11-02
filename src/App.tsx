@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import { WorkoutProvider, useWorkout } from './context/WorkoutContext.tsx';
 import { Navbar } from './components/Navbar.tsx';
-import { BottomNav } from './components/BottomNav.tsx';
+import { BottomNav, type AppTab } from './components/BottomNav.tsx';
 import { Dashboard } from './components/Dashboard.tsx';
+import { CoachDashboard } from './components/CoachDashboard.tsx';
 import { WorkoutRoutines } from './components/WorkoutRoutines.tsx';
 import { WeeklyCharts } from './components/WeeklyCharts.tsx';
 import { BodyProgress } from './components/BodyProgress.tsx';
 import { ActiveWorkoutModal } from './components/ActiveWorkoutModal.tsx';
 import { RestTimerBar } from './components/RestTimerBar.tsx';
-import { CoachViewModal } from './components/CoachViewModal.tsx';
 import { AuthModal } from './components/AuthModal.tsx';
 import { StudentManagerModal } from './components/StudentManagerModal.tsx';
 import { ImcCalculator } from './components/ImcCalculator.tsx';
@@ -22,10 +22,8 @@ const AppContent: React.FC = () => {
   const { activeWorkout, startWorkout } = useWorkout();
   const { user, isAuthModalOpen, openAuthModal, closeAuthModal } = useAuth();
   const isCoach = user?.role === 'coach';
-  const [currentTab, setCurrentTab] = useState<'inicio' | 'treinos' | 'evolucao' | 'medidas'>('inicio');
+  const [currentTab, setCurrentTab] = useState<AppTab>('inicio');
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
-  const [isCoachViewOpen, setIsCoachViewOpen] = useState(false);
-  const [isStudentManagerOpen, setIsStudentManagerOpen] = useState(false);
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
 
   const handleStartRoutine = (routineId: string) => {
@@ -47,19 +45,20 @@ const AppContent: React.FC = () => {
       <Navbar
         currentTab={currentTab}
         onNavigateTab={setCurrentTab}
-        onOpenCoachView={() => setIsCoachViewOpen(true)}
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
         onStartActiveWorkout={handleOpenActiveWorkout}
         onOpenAuthModal={openAuthModal}
       />
 
       {/* Main Content Viewport */}
-      <main className="flex-1 w-full max-w-2xl mx-auto px-4 pt-4 sm:pt-6">
-        {currentTab === 'inicio' && (
+      <main className={`flex-1 w-full ${isCoach ? 'max-w-4xl' : 'max-w-2xl'} mx-auto px-4 pt-4 sm:pt-6`}>
+        {currentTab === 'inicio' && isCoach && (
+          <CoachDashboard onNavigateTab={tab => setCurrentTab(tab)} />
+        )}
+
+        {currentTab === 'inicio' && !isCoach && (
           <Dashboard
             onStartWorkout={handleStartRoutine}
-            onOpenCoachView={() => setIsCoachViewOpen(true)}
-            onOpenStudentManager={() => setIsStudentManagerOpen(true)}
             onNavigateTab={setCurrentTab}
           />
         )}
@@ -72,12 +71,16 @@ const AppContent: React.FC = () => {
           <WorkoutRoutines onStartRoutine={handleStartRoutine} />
         )}
 
-        {currentTab === 'evolucao' && (
+        {currentTab === 'evolucao' && !isCoach && (
           <WeeklyCharts />
         )}
 
-        {currentTab === 'medidas' && (
+        {currentTab === 'medidas' && !isCoach && (
           <BodyProgress />
+        )}
+
+        {currentTab === 'alunos' && isCoach && (
+          <StudentManagerModal isOpen onClose={() => setCurrentTab('inicio')} />
         )}
       </main>
 
@@ -85,29 +88,12 @@ const AppContent: React.FC = () => {
       <RestTimerBar />
 
       {/* Bottom Navigation */}
-      <BottomNav currentTab={currentTab} onSelectTab={setCurrentTab} />
+      <BottomNav currentTab={currentTab} onSelectTab={setCurrentTab} isCoach={isCoach} />
 
       {/* Active Workout Session Modal / Drawer */}
       <ActiveWorkoutModal
         isOpen={isWorkoutModalOpen}
         onClose={() => setIsWorkoutModalOpen(false)}
-      />
-
-      {/* Coach CRM View Modal */}
-      <CoachViewModal
-        isOpen={isCoach && isCoachViewOpen}
-        onClose={() => setIsCoachViewOpen(false)}
-        onOpenStudentManager={() => setIsStudentManagerOpen(true)}
-        onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
-        onSelectStudentWorkout={() => {
-          handleStartRoutine('routine-a');
-        }}
-      />
-
-      {/* Student Manager (CRUD) Modal */}
-      <StudentManagerModal
-        isOpen={isCoach && isStudentManagerOpen}
-        onClose={() => setIsStudentManagerOpen(false)}
       />
 
       {/* User Login & Registration Modal */}

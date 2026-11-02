@@ -21,7 +21,7 @@ import {
 interface CoachViewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectStudentWorkout: () => void;
+  onSelectStudentWorkout: (routineCode: string) => void;
   onOpenStudentManager: () => void;
   onOpenSupabaseModal?: () => void;
 }
@@ -247,7 +247,7 @@ export const CoachViewModal: React.FC<CoachViewModalProps> = ({
                       type="button"
                       onClick={() => {
                         onClose();
-                        onSelectStudentWorkout();
+                        onSelectStudentWorkout(student.currentRoutineCode);
                       }}
                       className="px-3.5 py-2 rounded-xl bg-[#00ff66] text-[#04130a] text-xs font-bold font-display flex items-center gap-1.5 active:scale-95 shadow-md"
                     >

@@ -2,8 +2,8 @@ import React from 'react';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { useWorkout } from '../context/WorkoutContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
+import type { AppTab } from './BottomNav.tsx';
 import {
-  UserCheck,
   RotateCcw,
   LogIn,
   LogOut,
@@ -11,9 +11,8 @@ import {
 } from 'lucide-react';
 
 interface NavbarProps {
-  currentTab: string;
-  onNavigateTab: (tab: 'inicio' | 'treinos' | 'evolucao' | 'medidas') => void;
-  onOpenCoachView: () => void;
+  currentTab: AppTab;
+  onNavigateTab: (tab: AppTab) => void;
   onOpenSupabaseModal: () => void;
   onStartActiveWorkout: () => void;
   onOpenAuthModal: () => void;
@@ -22,7 +21,6 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   onNavigateTab,
-  onOpenCoachView,
   onOpenSupabaseModal,
   onStartActiveWorkout,
   onOpenAuthModal,
@@ -30,6 +28,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { user: roleUser } = useAuth();
   const { activeWorkout, resetAllData } = useWorkout();
   const { user, logout } = useAuth();
+  const isCoach = roleUser?.role === 'coach';
+  const navTabs: { id: AppTab; label: string }[] = isCoach
+    ? [
+        { id: 'inicio', label: 'Painel do treinador' },
+        { id: 'alunos', label: 'Alunos' },
+        { id: 'treinos', label: 'Fichas' },
+      ]
+    : [
+        { id: 'inicio', label: 'Início' },
+        { id: 'treinos', label: 'Fichas de Treino' },
+        { id: 'evolucao', label: 'Evolução Semanal' },
+        { id: 'medidas', label: 'Medidas Corporais' },
+      ];
 
   return (
     <header className="sticky top-0 z-30 w-full bg-[#09090b]/90 backdrop-blur-md border-b border-white/10">
@@ -39,7 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <img src="/cesar-avatar-small.jpg" alt="Cesar" className="w-10 h-10 rounded-full object-cover object-[50%_30%] border-2 border-[#00ff66]/70" />
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#00ff66] block leading-none">
-              #TeamCesar
+              {isCoach ? 'Área do treinador' : '#TeamCesar'}
             </span>
             <span className="text-base font-bold font-display text-white tracking-tight leading-tight">
               Cesar Treinos
@@ -49,42 +60,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Zone 2: Navigation Links (Desktop) */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[#a1a1aa]">
-          <button
-            type="button"
-            onClick={() => onNavigateTab('inicio')}
-            className={`transition-colors whitespace-nowrap shrink-0 ${
-              currentTab === 'inicio' ? 'text-white font-bold' : 'hover:text-white'
-            }`}
-          >
-            Início
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigateTab('treinos')}
-            className={`transition-colors whitespace-nowrap shrink-0 ${
-              currentTab === 'treinos' ? 'text-white font-bold' : 'hover:text-white'
-            }`}
-          >
-            Fichas de Treino
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigateTab('evolucao')}
-            className={`transition-colors whitespace-nowrap shrink-0 ${
-              currentTab === 'evolucao' ? 'text-white font-bold' : 'hover:text-white'
-            }`}
-          >
-            Evolução Semanal
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigateTab('medidas')}
-            className={`transition-colors whitespace-nowrap shrink-0 ${
-              currentTab === 'medidas' ? 'text-white font-bold' : 'hover:text-white'
-            }`}
-          >
-            Medidas Corporais
-          </button>
+          {navTabs.map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onNavigateTab(tab.id)}
+              className={`transition-colors whitespace-nowrap shrink-0 ${
+                currentTab === tab.id ? 'text-white font-bold' : 'hover:text-white'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </nav>
 
         {/* Zone 3: Actions & Auth */}
@@ -102,21 +89,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
           )}
 
-          {roleUser?.role === 'coach' && (
-          <button
-            type="button"
-            onClick={onOpenCoachView}
-            className="px-2.5 py-1.5 rounded-xl bg-[#121214] hover:bg-[#1c1c21] text-[#5be7ff] text-xs font-semibold flex items-center gap-1.5 border border-white/5 transition-all"
-            title="Ver CRM do Treinador Cesar"
-          >
-            <UserCheck className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">CRM Cesar</span>
-          </button>
-          )}
-
           <ThemeToggle />
 
-          <button
+          {!isCoach && <button
             type="button"
             onClick={() => {
               if (window.confirm('Deseja restaurar os dados de exemplo do aluno e treinos?')) {
@@ -127,9 +102,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             title="Restaurar dados de exemplo"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-          </button>
+          </button>}
 
-          {activeWorkout && (
+          {!isCoach && activeWorkout && (
             <button
               type="button"
               onClick={onStartActiveWorkout}

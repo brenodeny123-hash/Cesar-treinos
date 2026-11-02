@@ -44,7 +44,7 @@ export const StudentManagerModal: React.FC<StudentManagerModalProps> = ({
   const [plan, setPlan] = useState<'Mensal' | 'Trimestral VIP' | 'Semestral' | 'Anual'>('Trimestral VIP');
   const [monthlyFee, setMonthlyFee] = useState(220);
   const [status, setStatus] = useState<'Ativo' | 'Pendente' | 'Avaliação'>('Ativo');
-  const [currentRoutineCode, setCurrentRoutineCode] = useState('A');
+  const [currentRoutineCode, setCurrentRoutineCode] = useState(() => routines[0]?.code || 'A');
   const [goal, setGoal] = useState('Hipertrofia com Definição');
   const [weightKg, setWeightKg] = useState(78.5);
   const [notes, setNotes] = useState('');
@@ -60,7 +60,7 @@ export const StudentManagerModal: React.FC<StudentManagerModalProps> = ({
     setPlan('Trimestral VIP');
     setMonthlyFee(220);
     setStatus('Ativo');
-    setCurrentRoutineCode('A');
+    setCurrentRoutineCode(routines[0]?.code || 'A');
     setGoal('Hipertrofia com Definição');
     setWeightKg(78.5);
     setNotes('');
